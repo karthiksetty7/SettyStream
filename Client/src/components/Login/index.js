@@ -1,14 +1,13 @@
 import {Component} from 'react'
 import Cookies from 'js-cookie'
-
 import {apiRequest} from '../../utils/api'
-import logo from '../../SettyStream.png'
 
+import logo from '../../SettyStream.png'
 import './index.css'
 
 class Login extends Component {
   state = {
-    email: '',
+    loginId: '',
     password: '',
     showPasswd: false,
     errMsg: '',
@@ -17,14 +16,14 @@ class Login extends Component {
   verifyUserCredientials = async event => {
     event.preventDefault()
 
-    const {email, password} = this.state
+    const {loginId, password} = this.state
     const {history} = this.props
 
     const data = await apiRequest({
       endpoint: '/auth/login',
       method: 'POST',
       body: {
-        email,
+        loginId,
         password,
       },
       history,
@@ -41,7 +40,7 @@ class Login extends Component {
   }
 
   render() {
-    const {email, password, showPasswd, errMsg} = this.state
+    const {loginId, password, showPasswd, errMsg} = this.state
 
     return (
       <div className='login'>
@@ -49,15 +48,15 @@ class Login extends Component {
           <img src={logo} alt='website logo' className='login__logo' />
 
           <form className='login__form' onSubmit={this.verifyUserCredientials}>
-            <label htmlFor='email' className='login__label'>
-              EMAIL
+            <label htmlFor='loginId' className='login__label'>
+              USERNAME OR EMAIL
             </label>
             <input
-              id='email'
-              type='email'
-              placeholder='Enter Email'
-              value={email}
-              onChange={e => this.setState({email: e.target.value})}
+              id='loginId'
+              type='text'
+              placeholder='Enter Username or Email'
+              value={loginId}
+              onChange={e => this.setState({loginId: e.target.value})}
               className='login__input'
             />
 
