@@ -1,5 +1,4 @@
 import { Component } from "react";
-import Cookies from "js-cookie";
 import Loader from "react-loader-spinner";
 import { SiYoutubegaming } from "react-icons/si";
 
@@ -8,6 +7,7 @@ import LeftNavBar from "../LeftNavBar";
 import CommonVideosList from "../CommonVideosList";
 
 import BackgroundContext from "../../BackgroundContext";
+import { apiRequest } from "../../utils/api";
 
 import "./index.css";
 
@@ -29,7 +29,7 @@ class Gaming extends Component {
   }
 
   getFormattedVideos = (data) =>
-    data.videos.map((video) => ({
+    (data.videos || []).map((video) => ({
       id: video.id,
       title: video.title,
       thumbnailUrl: video.thumbnail_url,
@@ -45,29 +45,23 @@ class Gaming extends Component {
   fetchGaming = async () => {
     this.setState({ status: apiStatus.LOADING });
 
-    const jwtToken = Cookies.get("jwt_token");
+    const response = await apiRequest({
+      endpoint: `/videos?category=gaming`,
+      method: "GET",
+      isPublic: true,
+    });
 
-    try {
-      const response = await fetch("https://apis.ccbp.in/videos/gaming", {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updatedVideos = this.getFormattedVideos(data);
-
-        this.setState({
-          videos: updatedVideos,
-          status: apiStatus.SUCCESS,
-        });
-      } else {
-        this.setState({ status: apiStatus.FAILURE });
-      }
-    } catch (error) {
+    if (!response || response.success === false) {
       this.setState({ status: apiStatus.FAILURE });
+      return;
     }
+
+    const updatedVideos = this.getFormattedVideos(response);
+
+    this.setState({
+      videos: updatedVideos,
+      status: apiStatus.SUCCESS,
+    });
   };
 
   renderVideos = () => {
@@ -120,9 +114,20 @@ class Gaming extends Component {
     </div>
   );
 
-  renderSuccessView = () => (
+  renderHeaderSection = (isDarkMode) => (
+    <div
+      className={`gaming-header ${isDarkMode ? "gaming-header--dark" : ""}`}
+    >
+      <div className="gaming-icon-container">
+        <SiYoutubegaming className="gaming-icon" />
+      </div>
+      <h1 className="gaming-title">Gaming</h1>
+    </div>
+  );
+
+  renderSuccessView = (isDarkMode) => (
     <>
-      
+      {this.renderHeaderSection(isDarkMode)}
       {this.renderVideos()}
     </>
   );
@@ -136,7 +141,7 @@ class Gaming extends Component {
       case apiStatus.FAILURE:
         return this.renderFailureView(isDarkMode);
       case apiStatus.SUCCESS:
-        return this.renderSuccessView();
+        return this.renderSuccessView(isDarkMode);
       default:
         return null;
     }
