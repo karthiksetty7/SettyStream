@@ -1,6 +1,5 @@
 import { Component } from "react";
 import { MdClose, MdSearch } from "react-icons/md";
-import Cookies from "js-cookie";
 import Loader from "react-loader-spinner";
 
 import Header from "../Header";
@@ -8,6 +7,7 @@ import LeftNavBar from "../LeftNavBar";
 import CommonVideosList from "../CommonVideosList";
 
 import BackgroundContext from "../../BackgroundContext";
+import { apiRequest } from "../../utils/api";
 import logo from "../../SettyStream.png";
 
 import "./index.css";
@@ -33,15 +33,15 @@ class Home extends Component {
   }
 
   getFormattedVideos = (data) =>
-    data.videos.map((video) => ({
+    (data.videos || []).map((video) => ({
       id: video.id,
       title: video.title,
       thumbnailUrl: video.thumbnail_url,
       viewCount: video.view_count,
       publishedAt: video.published_at,
       channel: {
-        name: video.channel.name,
-        profileImageUrl: video.channel.profile_image_url,
+        name: video.channel?.name || "",
+        profileImageUrl: video.channel?.profile_image_url || "",
       },
     }));
 
@@ -49,32 +49,24 @@ class Home extends Component {
     this.setState({ status: apiStatus.LOADING });
 
     const { activeSearch } = this.state;
-    const jwtToken = Cookies.get("jwt_token");
 
-    try {
-      const response = await fetch(
-        `https://apis.ccbp.in/videos/all?search=${activeSearch}`,
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        },
-      );
+    const response = await apiRequest({
+      endpoint: `/videos?category=home&search=${encodeURIComponent(activeSearch)}`,
+      method: "GET",
+      isPublic: true,
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        const updatedVideos = this.getFormattedVideos(data);
-
-        this.setState({
-          videos: updatedVideos,
-          status: apiStatus.SUCCESS,
-        });
-      } else {
-        this.setState({ status: apiStatus.FAILURE });
-      }
-    } catch (error) {
+    if (!response || response.success === false) {
       this.setState({ status: apiStatus.FAILURE });
+      return;
     }
+
+    const updatedVideos = this.getFormattedVideos(response);
+
+    this.setState({
+      videos: updatedVideos,
+      status: apiStatus.SUCCESS,
+    });
   };
 
   onChangeSearchInput = (event) => {
@@ -84,7 +76,7 @@ class Home extends Component {
   onSearch = () => {
     this.setState(
       (prevState) => ({ activeSearch: prevState.searchInput }),
-      this.fetchVideos,
+      this.fetchVideos
     );
   };
 
