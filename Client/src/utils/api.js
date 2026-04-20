@@ -13,8 +13,13 @@ export const apiRequest = async ({
   const token = Cookies.get('token') || localStorage.getItem('token')
 
   if (!isPublic && !token) {
-    handleAuthError(history)
-    return null
+    if (history) {
+      handleAuthError(history)
+    }
+    return {
+      success: false,
+      message: 'No token found. Please login again.',
+    }
   }
 
   try {
@@ -37,8 +42,13 @@ export const apiRequest = async ({
     }
 
     if (res.status === 401 && !isPublic) {
-      handleAuthError(history)
-      return null
+      if (history) {
+        handleAuthError(history)
+      }
+      return {
+        success: false,
+        message: 'Unauthorized. Please login again.',
+      }
     }
 
     if (!res.ok || data.success === false) {
