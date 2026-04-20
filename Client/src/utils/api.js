@@ -29,23 +29,22 @@ export const apiRequest = async ({
       body: isFormData ? body : body ? JSON.stringify(body) : null,
     })
 
-    if (res.status === 401) {
-      handleAuthError(history)
-      return null
-    }
-
-    let data
+    let data = {}
     try {
       data = await res.json()
-    } catch {
+    } catch (e) {
       data = {}
+    }
+
+    if (res.status === 401 && !isPublic) {
+      handleAuthError(history)
+      return null
     }
 
     if (!res.ok || data.success === false) {
       return {
         success: false,
-        message:
-          data.message || data.error || 'Something went wrong. Please try again.',
+        message: data.message || 'Something went wrong',
       }
     }
 
