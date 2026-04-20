@@ -1,0 +1,100 @@
+/* MAIN BACKGROUND */
+.login {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #e0f2fe, #f8fafc);
+}
+
+/* CARD */
+.login__card {
+  width: 350px;
+  padding: 30px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* LOGO */
+.login__logo {
+  height: 60px; /* 🔥 increased */
+  margin-bottom: 20px;
+}
+
+/* FORM */
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+/* LABEL */
+.login__label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* INPUT */
+.login__input {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5f5;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.login__input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+}
+
+/* CHECKBOX */
+.login__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+/* BUTTON */
+.login__btn {
+  margin-top: 10px;
+  height: 40px;
+  border: none;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login__btn:hover {
+  background: #2563eb;
+}
+
+/* ERROR */
+.login__error {
+  color: red;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+/* ========================= */
+/* 📱 RESPONSIVE */
+/* ========================= */
+
+@media (max-width: 480px) {
+  .login__card {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .login__logo {
+    height: 50px;
+  }
+}

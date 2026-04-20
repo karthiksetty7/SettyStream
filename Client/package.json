@@ -1,0 +1,69 @@
+{
+  "name": "settystream",
+  "private": true,
+  "version": "2.0.0",
+  "engines": {
+    "node": ">=18",
+    "npm": ">=8"
+  },
+  "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "chalk": "^4.1.2",
+    "date-fns": "^2.30.0",
+    "history": "^5.3.0",
+    "js-cookie": "^3.0.5",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-icons": "^4.12.0",
+    "react-loader-spinner": "^4.0.0",
+    "react-player": "^2.13.0",
+    "react-router-dom": "^5.3.4",
+    "reactjs-popup": "^2.0.6",
+    "styled-components": "^5.3.11"
+  },
+  "devDependencies": {
+    "babel-plugin-styled-components": "^2.1.4",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.2.5",
+    "react-scripts": "^5.0.1"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix src/",
+    "format": "prettier --write \"./src\"",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run lint:fix"
+    ],
+    "*.{js,jsx,json,html,css}": [
+      "npm run format"
+    ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ]
+  },
+  "browserslist": {
+    "development": [
+      "last 2 chrome versions",
+      "last 2 firefox versions",
+      "last 2 edge versions"
+    ],
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ]
+  }
+}

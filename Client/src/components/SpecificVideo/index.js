@@ -1,0 +1,279 @@
+import {Component} from 'react'
+import Cookies from 'js-cookie'
+import Loader from 'react-loader-spinner'
+import ReactPlayer from 'react-player'
+import {BiLike, BiDislike, BiListPlus} from 'react-icons/bi'
+import {AiOutlineDownload} from 'react-icons/ai'
+
+import Header from '../Header'
+import LeftNavBar from '../LeftNavBar'
+import BackgroundContext from '../../BackgroundContext'
+
+import './index.css'
+
+const apiStatusConstants = {
+  INITIAL: 'INITIAL',
+  LOADING: 'LOADING',
+  SUCCESS: 'SUCCESS',
+  FAILURE: 'FAILURE',
+}
+
+class VideoItemDetails extends Component {
+  static contextType = BackgroundContext
+
+  state = {
+    videoDetails: null,
+    apiStatus: apiStatusConstants.INITIAL,
+  }
+
+  componentDidMount() {
+    this.getVideoDetails()
+  }
+
+  getFormattedVideoDetails = data => ({
+    id: data.id,
+    title: data.title,
+    videoUrl: data.video_url,
+    thumbnailUrl: data.thumbnail_url,
+    viewCount: data.view_count,
+    description: data.description,
+    publishedAt: data.published_at,
+    channel: {
+      name: data.channel.name,
+      profileImageUrl: data.channel.profile_image_url,
+      subscriberCount: data.channel.subscriber_count,
+    },
+  })
+
+  getVideoDetails = async () => {
+    this.setState({apiStatus: apiStatusConstants.LOADING})
+
+    const {match} = this.props
+    const {id} = match.params
+    const jwtToken = Cookies.get('jwt_token')
+
+    try {
+      const response = await fetch(`https://apis.ccbp.in/videos/${id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        const updatedData = this.getFormattedVideoDetails(data.video_details)
+
+        this.setState({
+          videoDetails: updatedData,
+          apiStatus: apiStatusConstants.SUCCESS,
+        })
+
+        this.context.addToHistory(updatedData)
+      } else {
+        this.setState({apiStatus: apiStatusConstants.FAILURE})
+      }
+    } catch {
+      this.setState({apiStatus: apiStatusConstants.FAILURE})
+    }
+  }
+
+  onClickLike = videoDetails => {
+    const {likedVideos, likeVideo, removeLike} = this.context
+    const isLiked = likedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+
+    if (isLiked) {
+      removeLike(videoDetails)
+    } else {
+      likeVideo(videoDetails)
+    }
+  }
+
+  onClickDislike = videoDetails => {
+    const {dislikedVideos, dislikeVideo} = this.context
+    const isDisliked = dislikedVideos.find(
+      eachVideo => eachVideo.id === videoDetails.id,
+    )
+
+    if (isDisliked) {
+      return
+    }
+
+    dislikeVideo(videoDetails)
+  }
+
+  onClickDownload = () => {
+    const {videoDetails} = this.state
+
+    if (!videoDetails) {
+      return
+    }
+
+    this.context.addToDownloads(videoDetails)
+  }
+
+  renderLoader = isDarkMode => (
+    <div className="loader-container" data-testid="loader">
+      <Loader
+        type="ThreeDots"
+        color={isDarkMode ? '#ffffff' : '#4f46e5'}
+        height={50}
+        width={50}
+      />
+    </div>
+  )
+
+  renderFailureView = isDarkMode => (
+    <div className={`video-page-error ${isDarkMode ? 'video-page-error--dark' : ''}`}>
+      <img
+        src="https://assets.ccbp.in/frontend/react-js/nxt-watch-failure-view.png"
+        alt="failure view"
+        className="video-page-error-image"
+      />
+      <h2>Oops! Something went wrong</h2>
+      <p>We are having some trouble to complete your request. Please try again.</p>
+      <button type="button" onClick={this.getVideoDetails}>
+        Retry
+      </button>
+    </div>
+  )
+
+  renderVideoContent = isDarkMode => {
+    const {videoDetails} = this.state
+    const {
+      toggleSaveVideo,
+      savedVideos,
+      likedVideos,
+      dislikedVideos,
+      downloadedVideos,
+    } = this.context
+
+    const isSaved = savedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+    const isLiked = likedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+    const isDisliked = dislikedVideos.find(
+      eachVideo => eachVideo.id === videoDetails.id,
+    )
+    const isDownloaded = downloadedVideos.find(
+      eachVideo => eachVideo.id === videoDetails.id,
+    )
+
+    const {title, videoUrl, viewCount, description, channel} = videoDetails
+
+    return (
+      <div className="video-page-container">
+        <div className="video-page-content">
+          <ReactPlayer url={videoUrl} controls width="100%" />
+
+          <h2 className="video-page-title">{title}</h2>
+
+          <div className="video-page-actions">
+            <p className="video-page-views">{viewCount} views</p>
+
+            <div className="video-page-buttons">
+              <button
+                type="button"
+                className={`video-btn ${isLiked ? 'active-like' : ''}`}
+                onClick={() => this.onClickLike(videoDetails)}
+              >
+                <BiLike />
+                Like
+              </button>
+
+              <button
+                type="button"
+                className={`video-btn ${isDisliked ? 'active-dislike' : ''}`}
+                onClick={() => this.onClickDislike(videoDetails)}
+              >
+                <BiDislike />
+                Dislike
+              </button>
+
+              <button
+                type="button"
+                className={`video-btn ${isSaved ? 'active-save' : ''}`}
+                onClick={() => toggleSaveVideo(videoDetails)}
+              >
+                <BiListPlus />
+                {isSaved ? 'Saved' : 'Save'}
+              </button>
+
+              <button
+                type="button"
+                className={`video-btn ${isDownloaded ? 'active-download' : ''}`}
+                onClick={this.onClickDownload}
+              >
+                <AiOutlineDownload />
+                {isDownloaded ? 'Downloaded' : 'Download'}
+              </button>
+            </div>
+          </div>
+
+          <hr className="video-page-divider" />
+
+          <div className="video-page-channel">
+            <img
+              src={channel.profileImageUrl}
+              alt="channel logo"
+              className="video-page-channel-img"
+            />
+            <div className="video-page-channel-info">
+              <p
+                className={`video-page-channel-name ${
+                  isDarkMode ? 'video-page-channel-name--dark' : ''
+                }`}
+              >
+                {channel.name}
+              </p>
+              <p className="video-page-subscribers">
+                {channel.subscriberCount} subscribers
+              </p>
+              <p
+                className={`video-page-description ${
+                  isDarkMode ? 'video-page-description--dark' : ''
+                }`}
+              >
+                {description}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  renderVideoDetails = isDarkMode => {
+    const {apiStatus} = this.state
+
+    switch (apiStatus) {
+      case apiStatusConstants.LOADING:
+        return this.renderLoader(isDarkMode)
+      case apiStatusConstants.SUCCESS:
+        return this.renderVideoContent(isDarkMode)
+      case apiStatusConstants.FAILURE:
+        return this.renderFailureView(isDarkMode)
+      default:
+        return null
+    }
+  }
+
+  render() {
+    return (
+      <BackgroundContext.Consumer>
+        {({isDarkMode}) => (
+          <>
+            <Header />
+            <div className="nav-sections-container">
+              <LeftNavBar />
+              <main className={`video-page ${isDarkMode ? 'video-page--dark' : ''}`}>
+                {this.renderVideoDetails(isDarkMode)}
+              </main>
+            </div>
+          </>
+        )}
+      </BackgroundContext.Consumer>
+    )
+  }
+}
+
+export default VideoItemDetails

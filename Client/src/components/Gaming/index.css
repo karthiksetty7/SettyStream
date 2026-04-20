@@ -1,0 +1,197 @@
+.gaming {
+  flex: 1;
+  padding: 20px;
+  padding-top: 25px;
+  background-color: #f9f9f9;
+  overflow-y: auto;
+  min-height: 100%;
+}
+
+.gaming--dark {
+  background-color: #181818;
+  color: #ffffff;
+}
+
+.gaming-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 4px 2px;
+}
+
+.gaming-header h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.gaming-icon {
+  font-size: 24px;
+  color: #9333ea;
+  flex-shrink: 0;
+}
+
+.gaming-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+}
+
+.gaming-error {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.gaming-error-image {
+  width: 250px;
+  max-width: 80%;
+  margin-bottom: 20px;
+}
+
+.gaming-error h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  color: #1e293b;
+}
+
+.gaming-error--dark h2 {
+  color: #ffffff;
+}
+
+.gaming-error p {
+  margin: 0 0 20px;
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.gaming-error--dark p {
+  color: #cbd5e1;
+}
+
+.gaming-error button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #4f46e5;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.gaming-error button:hover {
+  background-color: #4338ca;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+}
+
+@media (max-width: 768px) {
+  .gaming {
+    padding: 10px;
+    padding-top: 25px;
+    padding-bottom: 80px;
+  }
+
+  .gaming-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .gaming-header {
+    margin-bottom: 16px;
+    padding-left: 2px;
+  }
+
+  .gaming-header h1 {
+    font-size: 22px;
+  }
+
+  .gaming-icon {
+    font-size: 22px;
+  }
+
+  .gaming-error {
+    min-height: calc(100vh - 140px);
+  }
+
+  .gaming-error-image {
+    width: 180px;
+  }
+
+  .gaming-error h2 {
+    font-size: 22px;
+  }
+
+  .gaming-error p {
+    font-size: 14px;
+  }
+
+  .gaming-error button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gaming {
+    padding: 10px;
+    padding-top: 30px;
+    padding-bottom: 70px;
+  }
+
+  .gaming-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .gaming-header {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-left: 4px;
+  }
+
+  .gaming-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .gaming-icon {
+    font-size: 20px;
+  }
+
+  .gaming-error-image {
+    width: 140px;
+  }
+
+  .gaming-error h2 {
+    font-size: 18px;
+  }
+
+  .gaming-error p {
+    font-size: 13px;
+  }
+
+  .gaming-error button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

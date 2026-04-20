@@ -1,0 +1,25 @@
+.notfound {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.notfound--dark {
+  background-color: #181818;
+  color: #fff;
+}
+
+.notfound__img {
+  width: 300px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .notfound__img {
+    width: 200px;
+  }
+}
