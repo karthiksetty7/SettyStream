@@ -1,15 +1,14 @@
 import User from '../models/User.js'
 import generateToken from '../utils/generateToken.js'
-import bcrypt from 'bcryptjs'
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const {name, username, email, password} = req.body
 
-    if (!name || !email || !password) {
+    if (!name || !username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required',
+        message: 'Name, username, email, and password are required',
       })
     }
 
@@ -20,16 +19,23 @@ export const registerUser = async (req, res) => {
       })
     }
 
-    const existingUser = await User.findOne({ email })
+    const existingUser = await User.findOne({
+      $or: [{email: email.toLowerCase()}, {username: username.toLowerCase()}],
+    })
 
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'User already exists with this email',
+        message: 'User already exists with this email or username',
       })
     }
 
-    const user = await User.create({ name, email, password })
+    const user = await User.create({
+      name,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
+      password,
+    })
 
     return res.status(201).json({
       success: true,
@@ -38,6 +44,7 @@ export const registerUser = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
       },
     })
@@ -52,50 +59,54 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const {loginId, password} = req.body
 
-    // Validation
-    if (!email || !password) {
+    if (!loginId || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Username/email and password are required',
       })
     }
 
-    // Find user
-    const user = await User.findOne({ email })
+    const user = await User.findOne({
+      $or: [
+        {email: loginId.toLowerCase()},
+        {username: loginId.toLowerCase()},
+      ],
+    })
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid username/email or password',
       })
     }
 
-    // Check password
     const isPasswordMatched = await user.comparePassword(password)
+
     if (!isPasswordMatched) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid username/email or password',
       })
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Login successful',
       token: generateToken(user._id),
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
-      }
+        username: user.username,
+        email: user.email,
+      },
     })
-
   } catch (error) {
-    console.error('Login error:', error)
-    res.status(500).json({
+    console.error('LOGIN ERROR FULL:', error)
+    return res.status(500).json({
       success: false,
-      message: 'Login failed due to server error'
+      message: error.message || 'Login failed due to server error',
     })
   }
 }
