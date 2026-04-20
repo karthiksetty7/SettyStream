@@ -1,14 +1,15 @@
 import {Component} from 'react'
 import Cookies from 'js-cookie'
 
+import {apiRequest} from '../../utils/api'
 import logo from '../../SettyStream.png'
 
 import './index.css'
 
 class Login extends Component {
   state = {
-    userName: '',
-    passWord: '',
+    email: '',
+    password: '',
     showPasswd: false,
     errMsg: '',
   }
@@ -16,52 +17,50 @@ class Login extends Component {
   verifyUserCredientials = async event => {
     event.preventDefault()
 
-    const {userName, passWord} = this.state
+    const {email, password} = this.state
+    const {history} = this.props
 
-    const response = await fetch('https://apis.ccbp.in/login', {
+    const data = await apiRequest({
+      endpoint: '/auth/login',
       method: 'POST',
-      body: JSON.stringify({
-        username: userName,
-        password: passWord,
-      }),
+      body: {
+        email,
+        password,
+      },
+      history,
+      isPublic: true,
     })
 
-    const data = await response.json()
-
-    if (response.ok) {
-      Cookies.set('jwt_token', data.jwt_token, {expires: 30})
-      const {history} = this.props
+    if (data && data.success) {
+      Cookies.set('token', data.token, {expires: 30})
+      localStorage.setItem('token', data.token)
       history.replace('/')
     } else {
-      this.setState({errMsg: `*${data.error_msg}`})
+      this.setState({errMsg: data?.message || 'Login failed'})
     }
   }
 
   render() {
-    const {userName, passWord, showPasswd, errMsg} = this.state
+    const {email, password, showPasswd, errMsg} = this.state
 
     return (
       <div className='login'>
         <div className='login__card'>
-          {/* LOGO */}
           <img src={logo} alt='website logo' className='login__logo' />
 
-          {/* FORM */}
           <form className='login__form' onSubmit={this.verifyUserCredientials}>
-            {/* USERNAME */}
-            <label htmlFor='username' className='login__label'>
-              USERNAME
+            <label htmlFor='email' className='login__label'>
+              EMAIL
             </label>
             <input
-              id='username'
-              type='text'
-              placeholder='Enter Username'
-              value={userName}
-              onChange={e => this.setState({userName: e.target.value})}
+              id='email'
+              type='email'
+              placeholder='Enter Email'
+              value={email}
+              onChange={e => this.setState({email: e.target.value})}
               className='login__input'
             />
 
-            {/* PASSWORD */}
             <label htmlFor='password' className='login__label'>
               PASSWORD
             </label>
@@ -69,26 +68,24 @@ class Login extends Component {
               id='password'
               type={showPasswd ? 'text' : 'password'}
               placeholder='Enter Password'
-              value={passWord}
-              onChange={e => this.setState({passWord: e.target.value})}
+              value={password}
+              onChange={e => this.setState({password: e.target.value})}
               className='login__input'
             />
-            
-            {/* SHOW PASSWORD */}
+
             <div className='login__checkbox'>
               <input
+                id='showPassword'
                 type='checkbox'
                 onChange={e => this.setState({showPasswd: e.target.checked})}
               />
-              <span>Show Password</span>
+              <label htmlFor='showPassword'>Show Password</label>
             </div>
 
-            {/* BUTTON */}
             <button type='submit' className='login__btn'>
               Login
             </button>
 
-            {/* ERROR */}
             {errMsg && <p className='login__error'>{errMsg}</p>}
           </form>
         </div>
