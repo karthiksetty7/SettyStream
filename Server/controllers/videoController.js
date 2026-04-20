@@ -1,9 +1,21 @@
 import Video from '../models/Video.js'
 
-// GET all videos
+// GET videos by category + optional search
 export const getVideos = async (req, res) => {
   try {
-    const videos = await Video.find()
+    const { category = '', search = '' } = req.query
+
+    const filter = {}
+
+    if (category) {
+      filter.category = category
+    }
+
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' }
+    }
+
+    const videos = await Video.find(filter)
 
     return res.status(200).json({
       success: true,
