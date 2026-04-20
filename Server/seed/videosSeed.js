@@ -1,7 +1,11 @@
+// seeds/videoSeeder.js
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import Video from '../models/Video.js'
-import obj from '../homeapidata.js' // your file
+
+import home_api_data_obj from '../homeapidata.js'
+import trending_api_data_obj from '../trendingapidata.js'
+import gaming_api_data_obj from '../gamingapidata.js'
 
 dotenv.config()
 
@@ -14,15 +18,19 @@ const seedVideos = async () => {
   try {
     await connectDB()
 
-    await Video.deleteMany() // clear old data
+    const allVideos = [
+      ...home_api_data_obj.videos,
+      ...trending_api_data_obj.videos,
+      ...gaming_api_data_obj.videos,
+    ]
 
-    await Video.insertMany(obj.videos)
+    await Video.deleteMany({})
+    await Video.insertMany(allVideos)
 
-    console.log('60 videos inserted successfully 🚀')
-
+    console.log(`${allVideos.length} videos inserted successfully 🚀`)
     process.exit()
   } catch (error) {
-    console.error(error)
+    console.error('Seeder error:', error)
     process.exit(1)
   }
 }
