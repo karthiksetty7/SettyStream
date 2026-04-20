@@ -1,3 +1,4 @@
+// models/Video.js
 import mongoose from 'mongoose'
 
 const videoSchema = new mongoose.Schema(
@@ -6,15 +7,45 @@ const videoSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
-    title: String,
-    thumbnail_url: String,
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    thumbnail_url: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     channel: {
-      name: String,
-      profile_image_url: String,
+      name: {
+        type: String,
+        default: '',
+        trim: true,
+      },
+      profile_image_url: {
+        type: String,
+        default: '',
+        trim: true,
+      },
     },
-    view_count: String,
-    published_at: String,
+    view_count: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    published_at: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: ['home', 'trending', 'gaming'],
+    },
   },
   { timestamps: true }
 )
