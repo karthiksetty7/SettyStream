@@ -3,7 +3,10 @@ import generateToken from '../utils/generateToken.js'
 
 export const registerUser = async (req, res) => {
   try {
-    const {name, username, email, password} = req.body
+    const name = req.body.name?.trim()
+    const username = req.body.username?.trim().toLowerCase()
+    const email = req.body.email?.trim().toLowerCase()
+    const password = req.body.password?.trim()
 
     if (!name || !username || !email || !password) {
       return res.status(400).json({
@@ -20,7 +23,7 @@ export const registerUser = async (req, res) => {
     }
 
     const existingUser = await User.findOne({
-      $or: [{email: email.toLowerCase()}, {username: username.toLowerCase()}],
+      $or: [{ email }, { username }],
     })
 
     if (existingUser) {
@@ -32,8 +35,8 @@ export const registerUser = async (req, res) => {
 
     const user = await User.create({
       name,
-      username: username.toLowerCase(),
-      email: email.toLowerCase(),
+      username,
+      email,
       password,
     })
 
@@ -59,7 +62,8 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const {loginId, password} = req.body
+    const loginId = req.body.loginId?.trim().toLowerCase()
+    const password = req.body.password?.trim()
 
     if (!loginId || !password) {
       return res.status(400).json({
@@ -69,10 +73,7 @@ export const loginUser = async (req, res) => {
     }
 
     const user = await User.findOne({
-      $or: [
-        {email: loginId.toLowerCase()},
-        {username: loginId.toLowerCase()},
-      ],
+      $or: [{ email: loginId }, { username: loginId }],
     })
 
     if (!user) {
