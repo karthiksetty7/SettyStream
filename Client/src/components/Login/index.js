@@ -1,8 +1,10 @@
 import {Component} from 'react'
 import Cookies from 'js-cookie'
-import {apiRequest} from '../../utils/api'
+import {Redirect} from 'react-router-dom'
 
+import {apiRequest} from '../../utils/api'
 import logo from '../../SettyStream.png'
+
 import './index.css'
 
 class Login extends Component {
@@ -33,6 +35,10 @@ class Login extends Component {
     if (data && data.success) {
       Cookies.set('token', data.token, {expires: 30})
       localStorage.setItem('token', data.token)
+
+      console.log('Token saved:', data.token)
+      console.log('Redirecting...')
+
       history.replace('/')
     } else {
       this.setState({errMsg: data?.message || 'Login failed'})
@@ -40,6 +46,12 @@ class Login extends Component {
   }
 
   render() {
+    const token = Cookies.get('token') || localStorage.getItem('token')
+
+    if (token) {
+      return <Redirect to='/' />
+    }
+
     const {loginId, password, showPasswd, errMsg} = this.state
 
     return (
