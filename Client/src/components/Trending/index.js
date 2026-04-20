@@ -1,5 +1,4 @@
 import { Component } from "react";
-import Cookies from "js-cookie";
 import Loader from "react-loader-spinner";
 import { FaFire } from "react-icons/fa";
 
@@ -8,6 +7,7 @@ import LeftNavBar from "../LeftNavBar";
 import CommonVideosList from "../CommonVideosList";
 
 import BackgroundContext from "../../BackgroundContext";
+import { apiRequest } from "../../utils/api";
 
 import "./index.css";
 
@@ -29,44 +29,38 @@ class Trending extends Component {
   }
 
   getFormattedVideos = (data) =>
-    data.videos.map((video) => ({
+    (data.videos || []).map((video) => ({
       id: video.id,
       title: video.title,
       thumbnailUrl: video.thumbnail_url,
       viewCount: video.view_count,
       publishedAt: video.published_at,
       channel: {
-        name: video.channel.name,
-        profileImageUrl: video.channel.profile_image_url,
+        name: video.channel?.name || "",
+        profileImageUrl: video.channel?.profile_image_url || "",
       },
     }));
 
   fetchTrending = async () => {
     this.setState({ status: apiStatus.LOADING });
 
-    const jwtToken = Cookies.get("jwt_token");
+    const response = await apiRequest({
+      endpoint: `/videos?category=trending`,
+      method: "GET",
+      isPublic: true,
+    });
 
-    try {
-      const response = await fetch("https://apis.ccbp.in/videos/trending", {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updatedVideos = this.getFormattedVideos(data);
-
-        this.setState({
-          videos: updatedVideos,
-          status: apiStatus.SUCCESS,
-        });
-      } else {
-        this.setState({ status: apiStatus.FAILURE });
-      }
-    } catch {
+    if (!response || response.success === false) {
       this.setState({ status: apiStatus.FAILURE });
+      return;
     }
+
+    const updatedVideos = this.getFormattedVideos(response);
+
+    this.setState({
+      videos: updatedVideos,
+      status: apiStatus.SUCCESS,
+    });
   };
 
   renderVideos = () => {
@@ -75,13 +69,15 @@ class Trending extends Component {
     return (
       <ul className="trending-list">
         {videos.map((video) => (
-          <CommonVideosList
-            eachVideo={video}
-            showSaveOption
-            showDownloadOption
-            showShareOption
-            showDeleteOption={false}
-          />
+          <li key={video.id}>
+            <CommonVideosList
+              eachVideo={video}
+              showSaveOption
+              showDownloadOption
+              showShareOption
+              showDeleteOption={false}
+            />
+          </li>
         ))}
       </ul>
     );
@@ -117,7 +113,25 @@ class Trending extends Component {
     </div>
   );
 
-  renderSuccessView = () => <>{this.renderVideos()}</>;
+  renderHeaderSection = (isDarkMode) => (
+    <div
+      className={`trending-header ${
+        isDarkMode ? "trending-header--dark" : ""
+      }`}
+    >
+      <div className="trending-icon-container">
+        <FaFire className="trending-icon" />
+      </div>
+      <h1 className="trending-title">Trending</h1>
+    </div>
+  );
+
+  renderSuccessView = (isDarkMode) => (
+    <>
+      {this.renderHeaderSection(isDarkMode)}
+      {this.renderVideos()}
+    </>
+  );
 
   renderContent = (isDarkMode) => {
     const { status } = this.state;
@@ -128,7 +142,7 @@ class Trending extends Component {
       case apiStatus.FAILURE:
         return this.renderFailureView(isDarkMode);
       case apiStatus.SUCCESS:
-        return this.renderSuccessView();
+        return this.renderSuccessView(isDarkMode);
       default:
         return null;
     }
@@ -138,7 +152,9 @@ class Trending extends Component {
     return (
       <BackgroundContext.Consumer>
         {({ isDarkMode }) => {
-          const trendingClassName = `trending ${isDarkMode ? "trending--dark" : ""}`;
+          const trendingClassName = `trending ${
+            isDarkMode ? "trending--dark" : ""
+          }`;
 
           return (
             <>
