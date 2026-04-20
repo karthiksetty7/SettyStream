@@ -6,49 +6,46 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body
 
-    // Validation
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required'
+        message: 'Name, email, and password are required',
       })
     }
 
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long'
+        message: 'Password must be at least 6 characters long',
       })
     }
 
-    // Check if user exists
     const existingUser = await User.findOne({ email })
+
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'User already exists with this email',
       })
     }
 
-    // Create user (password auto-hashed by pre-save hook)
     const user = await User.create({ name, email, password })
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'User registered successfully',
       token: generateToken(user._id),
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+      },
     })
-
   } catch (error) {
-    console.error('Register error:', error)
-    res.status(500).json({
+    console.error('REGISTER ERROR FULL:', error)
+    return res.status(500).json({
       success: false,
-      message: 'Registration failed due to server error'
+      message: error.message || 'Registration failed due to server error',
     })
   }
 }
