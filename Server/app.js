@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import videoRoutes from './routes/videoRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 
 dotenv.config()
@@ -25,6 +26,8 @@ app.get('/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+
+app.use('/api/videos', videoRoutes)
 
 app.use((req, res) => {
   res.status(404).json({
