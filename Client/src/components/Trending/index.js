@@ -29,17 +29,17 @@ class Trending extends Component {
   }
 
   getFormattedVideos = (data) =>
-    (data.videos || []).map((video) => ({
-      id: video.id,
-      title: video.title,
-      thumbnailUrl: video.thumbnail_url,
-      viewCount: video.view_count,
-      publishedAt: video.published_at,
-      channel: {
-        name: video.channel?.name || "",
-        profileImageUrl: video.channel?.profile_image_url || "",
-      },
-    }));
+  (data.videos || []).map((video) => ({
+    id: video.id,
+    title: video.title,
+    thumbnailUrl: video.thumbnail_url,
+    viewCount: video.view_count,
+    publishedAt: video.published_at,
+    channel: {
+      name: video.channel?.name || "",
+      profileImageUrl: video.channel?.profile_image_url || "",
+    },
+  }));
 
   fetchTrending = async () => {
     this.setState({ status: apiStatus.LOADING });
