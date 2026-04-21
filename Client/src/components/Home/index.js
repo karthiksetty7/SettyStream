@@ -76,7 +76,7 @@ class Home extends Component {
   onSearch = () => {
     this.setState(
       (prevState) => ({ activeSearch: prevState.searchInput }),
-      this.fetchVideos
+      this.fetchVideos,
     );
   };
 
