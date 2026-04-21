@@ -34,11 +34,10 @@ class Gaming extends Component {
       title: video.title,
       thumbnailUrl: video.thumbnail_url,
       viewCount: video.view_count,
-      publishedAt: "Gaming",
+      publishedAt: video.published_at,
       channel: {
-        name: "Gaming",
-        profileImageUrl:
-          "https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png",
+        name: video.channel?.name || "",
+        profileImageUrl: video.channel?.profile_image_url || "",
       },
     }));
 
@@ -115,9 +114,7 @@ class Gaming extends Component {
   );
 
   renderHeaderSection = (isDarkMode) => (
-    <div
-      className={`gaming-header ${isDarkMode ? "gaming-header--dark" : ""}`}
-    >
+    <div className={`gaming-header ${isDarkMode ? "gaming-header--dark" : ""}`}>
       <div className="gaming-icon-container">
         <SiYoutubegaming className="gaming-icon" />
       </div>
