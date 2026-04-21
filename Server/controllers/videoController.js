@@ -39,35 +39,29 @@ export const getVideos = async (req, res) => {
 // GET single video by custom id
 export const getVideoById = async (req, res) => {
   try {
-    const { id } = req.params;
+    console.log("🔥 ID ROUTE HIT:", req.params.id)
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Video id is required",
-      });
-    }
+    const id = req.params.id
 
-    const video = await Video.findOne({ id: id.trim() }).lean();
+    const video = await Video.findOne({ id })
 
     if (!video) {
       return res.status(404).json({
         success: false,
         message: "Video not found",
-      });
+      })
     }
 
     return res.status(200).json({
       success: true,
       video,
-    });
-
+    })
   } catch (error) {
-    console.error("getVideoById error:", error);
+    console.error("GET VIDEO ERROR:", error)
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
-    });
+      message: "Server error",
+    })
   }
-};
+}
