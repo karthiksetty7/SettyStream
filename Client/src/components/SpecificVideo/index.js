@@ -27,8 +27,11 @@ class SpecificVideo extends Component {
   };
 
   componentDidMount() {
-    this.getVideoDetails();
-  }
+  console.log("PROPS:", this.props)
+  console.log("ID:", this.props.match?.params?.id)
+
+  this.getVideoDetails()
+}
 
   getFormattedVideoDetails = (data) => ({
     id: data.id,
