@@ -1,194 +1,203 @@
-import {Component} from 'react'
-import {Route, Switch} from 'react-router-dom'
+import { Component } from "react";
+import { Route, Switch } from "react-router-dom";
 
-import ProtectedRoute from './components/ProtectedRoute'
-import Login from './components/Login'
-import Home from './components/Home'
-import SpecificVideo from './components/SpecificVideo'
-import Trending from './components/Trending'
-import SavingVideos from './components/SavingVideos'
-import Gaming from './components/Gaming'
-import NotFound from './components/NotFound'
-import History from './components/History'
-import LikedVideos from './components/LikedVideos'
-import BackgroundContext from './BackgroundContext'
-import {apiRequest} from './utils/api'
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./components/Login";
+import Home from "./components/Home";
+import SpecificVideo from "./components/SpecificVideo";
+import Trending from "./components/Trending";
+import SavingVideos from "./components/SavingVideos";
+import Gaming from "./components/Gaming";
+import NotFound from "./components/NotFound";
+import History from "./components/History";
+import LikedVideos from "./components/LikedVideos";
+import BackgroundContext from "./BackgroundContext";
+import { apiRequest } from "./utils/api";
 
-import './App.css'
+import "./App.css";
 
 class App extends Component {
   state = {
     isDarkMode: false,
-    savedVideos: JSON.parse(localStorage.getItem('savedVideos')) || [],
-    likedVideos: JSON.parse(localStorage.getItem('likedVideos')) || [],
-    dislikedVideos: JSON.parse(localStorage.getItem('dislikedVideos')) || [],
+    savedVideos: JSON.parse(localStorage.getItem("savedVideos")) || [],
+    likedVideos: JSON.parse(localStorage.getItem("likedVideos")) || [],
+    dislikedVideos: JSON.parse(localStorage.getItem("dislikedVideos")) || [],
     historyVideos: [],
-  }
+  };
 
   componentDidMount() {
-    this.getHistoryVideos()
+    this.getHistoryVideos();
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {savedVideos, likedVideos, dislikedVideos} = this.state
+    const { savedVideos, likedVideos, dislikedVideos } = this.state;
 
     if (prevState.savedVideos !== savedVideos) {
-      localStorage.setItem('savedVideos', JSON.stringify(savedVideos))
+      localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
     }
 
     if (prevState.likedVideos !== likedVideos) {
-      localStorage.setItem('likedVideos', JSON.stringify(likedVideos))
+      localStorage.setItem("likedVideos", JSON.stringify(likedVideos));
     }
 
     if (prevState.dislikedVideos !== dislikedVideos) {
-      localStorage.setItem('dislikedVideos', JSON.stringify(dislikedVideos))
+      localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVideos));
     }
   }
 
   getHistoryVideos = async () => {
     const data = await apiRequest({
-      endpoint: '/history',
-      method: 'GET',
-    })
+      endpoint: "/history",
+      method: "GET",
+    });
 
     if (data.success === false) {
-      return
+      return;
     }
 
     this.setState({
       historyVideos: data.historyVideos || [],
-    })
-  }
+    });
+  };
 
   clearHistoryVideos = async () => {
     const data = await apiRequest({
-      endpoint: '/history',
-      method: 'DELETE',
-    })
+      endpoint: "/history",
+      method: "DELETE",
+    });
 
     if (data.success === false) {
-      return
+      return;
     }
 
-    this.setState({historyVideos: []})
-  }
+    this.setState({ historyVideos: [] });
+  };
 
   toggleTheme = () => {
-    this.setState(prevState => ({isDarkMode: !prevState.isDarkMode}))
-  }
+    this.setState((prevState) => ({ isDarkMode: !prevState.isDarkMode }));
+  };
 
-  toggleSaveVideo = video => {
-    this.setState(prevState => {
-      const exists = prevState.savedVideos.find(each => each.id === video.id)
+  toggleSaveVideo = (video) => {
+    this.setState((prevState) => {
+      const exists = prevState.savedVideos.find((each) => each.id === video.id);
 
       if (exists) {
         return {
           savedVideos: prevState.savedVideos.filter(
-            each => each.id !== video.id,
+            (each) => each.id !== video.id,
           ),
-        }
+        };
       }
 
       return {
         savedVideos: [video, ...prevState.savedVideos],
-      }
-    })
-  }
+      };
+    });
+  };
 
-  likeVideo = video => {
-    this.setState(prevState => {
-      const exists = prevState.likedVideos.find(each => each.id === video.id)
+  likeVideo = (video) => {
+    this.setState((prevState) => {
+      const exists = prevState.likedVideos.find((each) => each.id === video.id);
 
       if (exists) {
-        return null
+        return null;
       }
 
       return {
         likedVideos: [video, ...prevState.likedVideos],
         dislikedVideos: prevState.dislikedVideos.filter(
-          each => each.id !== video.id,
+          (each) => each.id !== video.id,
         ),
-      }
-    })
-  }
+      };
+    });
+  };
 
-  dislikeVideo = video => {
-    this.setState(prevState => {
-      const exists = prevState.dislikedVideos.find(each => each.id === video.id)
+  dislikeVideo = (video) => {
+    this.setState((prevState) => {
+      const exists = prevState.dislikedVideos.find(
+        (each) => each.id === video.id,
+      );
 
       if (exists) {
         return {
           dislikedVideos: prevState.dislikedVideos.filter(
-            each => each.id !== video.id,
+            (each) => each.id !== video.id,
           ),
-        }
+        };
       }
 
       return {
         dislikedVideos: [...prevState.dislikedVideos, video],
-        likedVideos: prevState.likedVideos.filter(each => each.id !== video.id),
-      }
-    })
-  }
+        likedVideos: prevState.likedVideos.filter(
+          (each) => each.id !== video.id,
+        ),
+      };
+    });
+  };
 
-  removeLike = video => {
-    this.setState(prevState => ({
-      likedVideos: prevState.likedVideos.filter(each => each.id !== video.id),
-    }))
-  }
+  removeLike = (video) => {
+    this.setState((prevState) => ({
+      likedVideos: prevState.likedVideos.filter((each) => each.id !== video.id),
+    }));
+  };
 
-  addToHistory = async video => {
+  addToHistory = async (video) => {
     const data = await apiRequest({
-      endpoint: '/history',
-      method: 'POST',
+      endpoint: "/history",
+      method: "POST",
       body: video,
-    })
+    });
 
-    if (data.success === false) {
-      return
+    if (!data.historyVideo) {
+      console.error("Failed to add to history:", data);
+      return;
     }
 
-    const newHistoryItem = data.historyVideo
+    const newHistoryItem = data.historyVideo;
 
-    this.setState(prevState => {
+    this.setState((prevState) => {
       const filteredHistory = prevState.historyVideos.filter(
-        each => each.videoId !== newHistoryItem.videoId,
-      )
+        (each) => each.videoId !== newHistoryItem.videoId,
+      );
 
       return {
         historyVideos: [newHistoryItem, ...filteredHistory],
-      }
-    })
-  }
+      };
+    });
+  };
 
-  removeSavedVideo = id => {
-    this.setState(prevState => ({
-      savedVideos: prevState.savedVideos.filter(each => each.id !== id),
-    }))
-  }
+  refreshHistory = async () => {
+    await this.getHistoryVideos();
+  };
 
-  removeHistoryVideo = async videoId => {
+  removeSavedVideo = (id) => {
+    this.setState((prevState) => ({
+      savedVideos: prevState.savedVideos.filter((each) => each.id !== id),
+    }));
+  };
+
+  removeHistoryVideo = async (videoId) => {
     const data = await apiRequest({
       endpoint: `/history/${videoId}`,
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
 
     if (data.success === false) {
-      return
+      return;
     }
 
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       historyVideos: prevState.historyVideos.filter(
-        each => each.videoId !== videoId,
+        (each) => each.videoId !== videoId,
       ),
-    }))
-  }
+    }));
+  };
 
-  removeLikedVideo = id => {
-    this.setState(prevState => ({
-      likedVideos: prevState.likedVideos.filter(each => each.id !== id),
-    }))
-  }
+  removeLikedVideo = (id) => {
+    this.setState((prevState) => ({
+      likedVideos: prevState.likedVideos.filter((each) => each.id !== id),
+    }));
+  };
 
   render() {
     return (
@@ -205,6 +214,7 @@ class App extends Component {
           removeSavedVideo: this.removeSavedVideo,
           removeHistoryVideo: this.removeHistoryVideo,
           removeLikedVideo: this.removeLikedVideo,
+          refreshHistory: this.refreshHistory,
           getHistoryVideos: this.getHistoryVideos,
         }}
       >
@@ -220,8 +230,8 @@ class App extends Component {
           <Route component={NotFound} />
         </Switch>
       </BackgroundContext.Provider>
-    )
+    );
   }
 }
 
-export default App
+export default App;
