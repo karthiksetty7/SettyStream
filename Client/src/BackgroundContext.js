@@ -18,10 +18,13 @@ const BackgroundContext = React.createContext({
   removeSavedVideo: async () => {},
   removeHistoryVideo: async () => {},
   removeLikedVideo: async () => {},
+  removeDislikedVideo: async () => {},
   getSavedVideos: async () => {},
   addSavedVideo: async () => {},
   getLikedVideos: async () => {},
   addLikedVideo: async () => {},
+  getDislikedVideos: async () => {},
+  toggleDislikedVideo: async () => {},
 })
 
 export default BackgroundContext
