@@ -2,6 +2,18 @@ import Cookies from 'js-cookie'
 import {handleAuthError} from './auth'
 
 const BASE_URL = 'https://settystream-production.up.railway.app/api'
+const TOKEN_KEY = 'token'
+const USER_ID_KEY = 'user_id'
+const USERNAME_KEY = 'username'
+const USER_NAME_KEY = 'user_name'
+
+const clearAuthStorage = () => {
+  Cookies.remove(TOKEN_KEY)
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_ID_KEY)
+  localStorage.removeItem(USERNAME_KEY)
+  localStorage.removeItem(USER_NAME_KEY)
+}
 
 export const apiRequest = async ({
   endpoint,
@@ -10,12 +22,21 @@ export const apiRequest = async ({
   history,
   isPublic = false,
 }) => {
-  const token = Cookies.get('token') || localStorage.getItem('token')
+  const normalizedEndpoint = endpoint.startsWith('/')
+    ? endpoint
+    : `/${endpoint}`
+
+  const token = Cookies.get(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
 
   if (!isPublic && !token) {
+    clearAuthStorage()
+
     if (history) {
       handleAuthError(history)
     }
+
+    window.dispatchEvent(new Event('auth-change'))
+
     return {
       success: false,
       message: 'No token found. Please login again.',
@@ -25,7 +46,7 @@ export const apiRequest = async ({
   try {
     const isFormData = body instanceof FormData
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+    const res = await fetch(`${BASE_URL}${normalizedEndpoint}`, {
       method,
       headers: {
         ...(isPublic ? {} : {Authorization: `Bearer ${token}`}),
@@ -42,9 +63,14 @@ export const apiRequest = async ({
     }
 
     if (res.status === 401 && !isPublic) {
+      clearAuthStorage()
+
       if (history) {
         handleAuthError(history)
       }
+
+      window.dispatchEvent(new Event('auth-change'))
+
       return {
         success: false,
         message: 'Unauthorized. Please login again.',
@@ -60,7 +86,7 @@ export const apiRequest = async ({
 
     return data
   } catch (error) {
-    console.error('❌ Network Error:', error)
+    console.error('Network Error:', error)
     return {
       success: false,
       message: 'Server not reachable. Check internet or backend.',
