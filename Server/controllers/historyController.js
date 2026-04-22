@@ -7,15 +7,20 @@ const getHistoryVideos = async (req, res) => {
       .lean()
 
     res.status(200).json({
+      success: true,
       historyVideos: historyVideos.map(item => ({
-        id: item._id,
+        id: item._id.toString(),
         videoId: item.videoId,
         video: item.video,
         watchedAt: item.watchedAt,
       })),
     })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch history videos' })
+    console.error('Get history error:', error)
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch history videos' 
+    })
   }
 }
 
@@ -24,7 +29,10 @@ const addHistoryVideo = async (req, res) => {
     const video = req.body
 
     if (!video?.id || !video?.title || !video?.thumbnail_url) {
-      return res.status(400).json({ message: 'Invalid video data' })
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid video data' 
+      })
     }
 
     const historyVideo = await History.findOneAndUpdate(
@@ -46,16 +54,21 @@ const addHistoryVideo = async (req, res) => {
     )
 
     res.status(200).json({
+      success: true,
       message: 'History updated successfully',
       historyVideo: {
-        id: historyVideo._id,
+        id: historyVideo._id.toString(),
         videoId: historyVideo.videoId,
         video: historyVideo.video,
         watchedAt: historyVideo.watchedAt,
       },
     })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to save history video' })
+    console.error('Add history error:', error)
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to save history video' 
+    })
   }
 }
 
@@ -63,27 +76,53 @@ const removeHistoryVideo = async (req, res) => {
   try {
     const { videoId } = req.params
 
+    if (!videoId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Video ID is required' 
+      })
+    }
+
     const deletedVideo = await History.findOneAndDelete({
       userId: req.user.id,
       videoId,
     })
 
     if (!deletedVideo) {
-      return res.status(404).json({ message: 'History video not found' })
+      return res.status(404).json({ 
+        success: false,
+        message: 'History video not found' 
+      })
     }
 
-    res.status(200).json({ message: 'History video removed successfully' })
+    res.status(200).json({ 
+      success: true,
+      message: 'History video removed successfully' 
+    })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to remove history video' })
+    console.error('Remove history error:', error)
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to remove history video' 
+    })
   }
 }
 
 const clearHistoryVideos = async (req, res) => {
   try {
-    await History.deleteMany({ userId: req.user.id })
-    res.status(200).json({ message: 'History cleared successfully' })
+    const result = await History.deleteMany({ userId: req.user.id })
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'History cleared successfully',
+      deletedCount: result.deletedCount 
+    })
   } catch (error) {
-    res.status(500).json({ message: 'Failed to clear history' })
+    console.error('Clear history error:', error)
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to clear history' 
+    })
   }
 }
 
