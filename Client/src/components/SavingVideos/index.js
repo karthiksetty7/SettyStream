@@ -36,7 +36,6 @@ const SavingVideos = () => (
                         eachVideo={video}
                         onDeleteVideo={removeSavedVideo}
                         showSaveOption={false}
-                        showDownloadOption={false}
                         showShareOption
                         showDeleteOption
                         deleteLabel="Remove from Watch Later"
