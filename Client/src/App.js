@@ -498,7 +498,7 @@ clearHistoryVideos = async () => {
 
   try {
     const data = await apiRequest({
-      endpoint: '/history',  // ✅ No /clear
+      endpoint: '/history/clear',
       method: 'DELETE',
     })
 
