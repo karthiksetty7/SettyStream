@@ -47,24 +47,21 @@ class SpecificVideo extends Component {
     },
   });
 
-  getHistoryPayload = (data) => ({
-    videoId: data.id,
-    video: {
-      id: data.id,
-      title: data.title,
-      thumbnail_url: data.thumbnail_url || "",
-      view_count: data.view_count || "",
-      published_at: data.published_at || "",
-      channel: {
-        name: data.channel?.name || "Unknown Channel",
-        profile_image_url:
-          data.channel?.profile_image_url ||
-          "https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png",
-      },
-      category: data.category || "",
-      video_url: data.video_url || "",
-    },
-  });
+  getHistoryPayload = data => ({
+  id: data.id,
+  title: data.title,
+  thumbnail_url: data.thumbnail_url || '',
+  view_count: data.view_count || '',
+  published_at: data.published_at || '',
+  channel: {
+    name: data.channel?.name || 'Unknown Channel',
+    profile_image_url:
+      data.channel?.profile_image_url ||
+      'https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png',
+  },
+  category: data.category || '',
+  video_url: data.video_url || '',
+})
 
   getVideoDetails = async () => {
     this.setState({ apiStatus: apiStatusConstants.LOADING });
