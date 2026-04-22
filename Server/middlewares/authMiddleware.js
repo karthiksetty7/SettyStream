@@ -1,40 +1,39 @@
 import jwt from 'jsonwebtoken'
-import User from '../models/User.js'
 
-export const protect = async (req, res, next) => {
-  try {
-    let token
+export const protect = (request, response, next) => {
+  const authHeader = request.headers.authorization
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer ')
-    ) {
-      token = req.headers.authorization.split(' ')[1]
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized, token missing',
-      })
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-    req.user = await User.findById(decoded.id).select('-password')
-
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found',
-      })
-    }
-
-    next()
-  } catch (error) {
-    return res.status(401).json({
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return response.status(401).json({
       success: false,
-      message: 'Not authorized, token invalid',
+      message: 'Authorization header missing or invalid',
     })
   }
+
+  const token = authHeader.split(' ')[1]
+
+  if (!token) {
+    return response.status(401).json({
+      success: false,
+      message: 'JWT token missing',
+    })
+  }
+
+  jwt.verify(
+    token,
+    process.env.JWT_SECRET || 'MY_SECRET_TOKEN',
+    (error, payload) => {
+      if (error) {
+        return response.status(401).json({
+          success: false,
+          message: 'Invalid access token',
+        })
+      }
+
+      request.user = payload
+      next()
+    },
+  )
 }
+
+export const authenticateToken = protect
