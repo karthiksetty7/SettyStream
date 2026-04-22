@@ -27,11 +27,8 @@ class SpecificVideo extends Component {
   };
 
   componentDidMount() {
-  console.log("PROPS:", this.props)
-  console.log("ID:", this.props.match?.params?.id)
-
-  this.getVideoDetails()
-}
+    this.getVideoDetails();
+  }
 
   getFormattedVideoDetails = (data) => ({
     id: data.id,
@@ -50,6 +47,25 @@ class SpecificVideo extends Component {
     },
   });
 
+  getHistoryPayload = (data) => ({
+    videoId: data.id,
+    video: {
+      id: data.id,
+      title: data.title,
+      thumbnail_url: data.thumbnail_url || "",
+      view_count: data.view_count || "",
+      published_at: data.published_at || "",
+      channel: {
+        name: data.channel?.name || "Unknown Channel",
+        profile_image_url:
+          data.channel?.profile_image_url ||
+          "https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png",
+      },
+      category: data.category || "",
+      video_url: data.video_url || "",
+    },
+  });
+
   getVideoDetails = async () => {
     this.setState({ apiStatus: apiStatusConstants.LOADING });
 
@@ -65,13 +81,15 @@ class SpecificVideo extends Component {
 
       if (response && response.success) {
         const updatedData = this.getFormattedVideoDetails(response.video);
+        const historyPayload = this.getHistoryPayload(response.video);
 
         this.setState({
           videoDetails: updatedData,
           apiStatus: apiStatusConstants.SUCCESS,
         });
 
-        this.context.addToHistory(updatedData);
+        // Use this.context.addToHistory with backend-compatible payload
+        await this.context.addToHistory(historyPayload);
       } else {
         this.setState({ apiStatus: apiStatusConstants.FAILURE });
       }
@@ -109,7 +127,7 @@ class SpecificVideo extends Component {
   onClickDownload = () => {
     const { videoDetails } = this.state;
 
-    if (!videoDetails) {
+    if (!videoDetails || !this.context.addToDownloads) {
       return;
     }
 
@@ -146,14 +164,15 @@ class SpecificVideo extends Component {
     </div>
   );
 
-  renderVideoContent = (isDarkMode) => {
+  renderVideoContent = () => {
     const { videoDetails } = this.state;
     const {
+      isDarkMode,
       toggleSaveVideo,
       savedVideos,
       likedVideos,
       dislikedVideos,
-      downloadedVideos,
+      downloadedVideos = [],
     } = this.context;
 
     const isSaved = savedVideos.find(
@@ -253,14 +272,15 @@ class SpecificVideo extends Component {
     );
   };
 
-  renderVideoDetails = (isDarkMode) => {
+  renderVideoDetails = () => {
     const { apiStatus } = this.state;
+    const { isDarkMode } = this.context;
 
     switch (apiStatus) {
       case apiStatusConstants.LOADING:
         return this.renderLoader(isDarkMode);
       case apiStatusConstants.SUCCESS:
-        return this.renderVideoContent(isDarkMode);
+        return this.renderVideoContent();
       case apiStatusConstants.FAILURE:
         return this.renderFailureView(isDarkMode);
       default:
@@ -269,22 +289,20 @@ class SpecificVideo extends Component {
   };
 
   render() {
+    const { isDarkMode } = this.context;
+
     return (
-      <BackgroundContext.Consumer>
-        {({ isDarkMode }) => (
-          <>
-            <Header />
-            <div className="nav-sections-container">
-              <LeftNavBar />
-              <main
-                className={`video-page ${isDarkMode ? "video-page--dark" : ""}`}
-              >
-                {this.renderVideoDetails(isDarkMode)}
-              </main>
-            </div>
-          </>
-        )}
-      </BackgroundContext.Consumer>
+      <>
+        <Header />
+        <div className="nav-sections-container">
+          <LeftNavBar />
+          <main
+            className={`video-page ${isDarkMode ? "video-page--dark" : ""}`}
+          >
+            {this.renderVideoDetails()}
+          </main>
+        </div>
+      </>
     );
   }
 }
