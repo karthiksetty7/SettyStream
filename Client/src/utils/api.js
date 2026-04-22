@@ -2,14 +2,17 @@ import Cookies from 'js-cookie'
 import {handleAuthError} from './auth'
 
 const BASE_URL = 'https://settystream-production.up.railway.app/api'
-const TOKEN_KEY = 'token'
+const TOKEN_KEY = 'jwt_token'
 const USER_ID_KEY = 'user_id'
 const USERNAME_KEY = 'username'
 const USER_NAME_KEY = 'user_name'
 
 const clearAuthStorage = () => {
-  Cookies.remove(TOKEN_KEY)
-  localStorage.removeItem(TOKEN_KEY)
+  Cookies.remove('jwt_token')
+  Cookies.remove('token')
+
+  localStorage.removeItem('jwt_token')
+  localStorage.removeItem('token')
   localStorage.removeItem(USER_ID_KEY)
   localStorage.removeItem(USERNAME_KEY)
   localStorage.removeItem(USER_NAME_KEY)
@@ -26,7 +29,11 @@ export const apiRequest = async ({
     ? endpoint
     : `/${endpoint}`
 
-  const token = Cookies.get(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY)
+  const token =
+    Cookies.get('jwt_token') ||
+    localStorage.getItem('jwt_token') ||
+    Cookies.get('token') ||
+    localStorage.getItem('token')
 
   if (!isPublic && !token) {
     clearAuthStorage()
