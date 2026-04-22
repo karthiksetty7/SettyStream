@@ -12,6 +12,7 @@ const BackgroundContext = React.createContext({
   dislikeVideo: () => {},
   removeLike: () => {},
   addToHistory: async () => {},
+  refreshHistory: async () => {},
   getHistoryVideos: async () => {},
   clearHistoryVideos: async () => {},
   removeSavedVideo: () => {},
