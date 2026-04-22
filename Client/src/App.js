@@ -21,7 +21,7 @@ class App extends Component {
     isDarkMode: false,
     savedVideos: [],
     likedVideos: [],
-    dislikedVideos: JSON.parse(localStorage.getItem('dislikedVideos')) || [],
+    dislikedVideos: [],
     historyVideos: [],
   }
 
@@ -29,14 +29,7 @@ class App extends Component {
     this.getHistoryVideos()
     this.getSavedVideos()
     this.getLikedVideos()
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const {dislikedVideos} = this.state
-
-    if (prevState.dislikedVideos !== dislikedVideos) {
-      localStorage.setItem('dislikedVideos', JSON.stringify(dislikedVideos))
-    }
+    this.getDislikedVideos()
   }
 
   formatVideoData = video => ({
@@ -204,6 +197,59 @@ class App extends Component {
     return true
   }
 
+  getDislikedVideos = async () => {
+    const data = await apiRequest({
+      endpoint: '/disliked-videos',
+      method: 'GET',
+    })
+
+    if (data.success === false) {
+      return
+    }
+
+    const formattedDislikedVideos = (data.dislikedVideos || []).map(item =>
+      this.formatVideoData(item.video),
+    )
+
+    this.setState({
+      dislikedVideos: formattedDislikedVideos,
+    })
+  }
+
+  toggleDislikedVideo = async video => {
+    const payload = this.normalizeVideoPayload(video)
+
+    const data = await apiRequest({
+      endpoint: '/disliked-videos',
+      method: 'POST',
+      body: payload,
+    })
+
+    if (data.success === false) {
+      console.error('Failed to toggle disliked video:', data)
+      return null
+    }
+
+    return data
+  }
+
+  removeDislikedVideo = async id => {
+    const data = await apiRequest({
+      endpoint: `/disliked-videos/${id}`,
+      method: 'DELETE',
+    })
+
+    if (data.success === false) {
+      return false
+    }
+
+    this.setState(prevState => ({
+      dislikedVideos: prevState.dislikedVideos.filter(each => each.id !== id),
+    }))
+
+    return true
+  }
+
   toggleTheme = () => {
     this.setState(prevState => ({isDarkMode: !prevState.isDarkMode}))
   }
@@ -215,31 +261,51 @@ class App extends Component {
       return
     }
 
-    await this.addLikedVideo(video)
+    const added = await this.addLikedVideo(video)
+
+    if (added) {
+      this.setState(prevState => ({
+        dislikedVideos: prevState.dislikedVideos.filter(
+          each => each.id !== video.id,
+        ),
+      }))
+    }
   }
 
   dislikeVideo = async video => {
-    const isLiked = this.state.likedVideos.some(each => each.id === video.id)
+    const response = await this.toggleDislikedVideo(video)
 
-    if (isLiked) {
-      await this.removeLikedVideo(video.id)
+    if (!response) {
+      return
     }
 
-    this.setState(prevState => {
-      const exists = prevState.dislikedVideos.find(each => each.id === video.id)
+    if (response.action === 'removed') {
+      this.setState(prevState => ({
+        dislikedVideos: prevState.dislikedVideos.filter(
+          each => each.id !== video.id,
+        ),
+      }))
+      return
+    }
 
-      if (exists) {
+    if (response.action === 'added') {
+      const formattedVideo = response.dislikedVideo?.video
+        ? this.formatVideoData(response.dislikedVideo.video)
+        : video
+
+      this.setState(prevState => {
+        const filteredDislikedVideos = prevState.dislikedVideos.filter(
+          each => each.id !== formattedVideo.id,
+        )
+
         return {
-          dislikedVideos: prevState.dislikedVideos.filter(
-            each => each.id !== video.id,
+          dislikedVideos: [formattedVideo, ...filteredDislikedVideos],
+          likedVideos: prevState.likedVideos.filter(
+            each => each.id !== formattedVideo.id,
           ),
         }
-      }
-
-      return {
-        dislikedVideos: [...prevState.dislikedVideos, video],
-      }
-    })
+      })
+    }
   }
 
   removeLike = async video => {
@@ -347,12 +413,15 @@ class App extends Component {
           removeSavedVideo: this.removeSavedVideo,
           removeHistoryVideo: this.removeHistoryVideo,
           removeLikedVideo: this.removeLikedVideo,
+          removeDislikedVideo: this.removeDislikedVideo,
           refreshHistory: this.refreshHistory,
           getHistoryVideos: this.getHistoryVideos,
           getSavedVideos: this.getSavedVideos,
           addSavedVideo: this.addSavedVideo,
           getLikedVideos: this.getLikedVideos,
           addLikedVideo: this.addLikedVideo,
+          getDislikedVideos: this.getDislikedVideos,
+          toggleDislikedVideo: this.toggleDislikedVideo,
         }}
       >
         <Switch>
