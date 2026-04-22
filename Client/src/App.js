@@ -1,233 +1,290 @@
-import { Component } from "react";
-import { Route, Switch } from "react-router-dom";
+import {Component} from 'react'
+import {Route, Switch} from 'react-router-dom'
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./components/Login";
-import Home from "./components/Home";
-import SpecificVideo from "./components/SpecificVideo";
-import Trending from "./components/Trending";
-import SavingVideos from "./components/SavingVideos";
-import Gaming from "./components/Gaming";
-import NotFound from "./components/NotFound";
-import History from "./components/History";
-import LikedVideos from "./components/LikedVideos";
-import BackgroundContext from "./BackgroundContext";
-import { apiRequest } from "./utils/api";
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './components/Login'
+import Home from './components/Home'
+import SpecificVideo from './components/SpecificVideo'
+import Trending from './components/Trending'
+import SavingVideos from './components/SavingVideos'
+import Gaming from './components/Gaming'
+import NotFound from './components/NotFound'
+import History from './components/History'
+import LikedVideos from './components/LikedVideos'
+import BackgroundContext from './BackgroundContext'
+import {apiRequest} from './utils/api'
 
-import "./App.css";
+import './App.css'
 
 class App extends Component {
   state = {
     isDarkMode: false,
-    savedVideos: JSON.parse(localStorage.getItem("savedVideos")) || [],
-    likedVideos: JSON.parse(localStorage.getItem("likedVideos")) || [],
-    dislikedVideos: JSON.parse(localStorage.getItem("dislikedVideos")) || [],
+    savedVideos: [],
+    likedVideos: JSON.parse(localStorage.getItem('likedVideos')) || [],
+    dislikedVideos: JSON.parse(localStorage.getItem('dislikedVideos')) || [],
     historyVideos: [],
-  };
+  }
 
   componentDidMount() {
-    this.getHistoryVideos();
+    this.getHistoryVideos()
+    this.getSavedVideos()
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { savedVideos, likedVideos, dislikedVideos } = this.state;
-
-    if (prevState.savedVideos !== savedVideos) {
-      localStorage.setItem("savedVideos", JSON.stringify(savedVideos));
-    }
+    const {likedVideos, dislikedVideos} = this.state
 
     if (prevState.likedVideos !== likedVideos) {
-      localStorage.setItem("likedVideos", JSON.stringify(likedVideos));
+      localStorage.setItem('likedVideos', JSON.stringify(likedVideos))
     }
 
     if (prevState.dislikedVideos !== dislikedVideos) {
-      localStorage.setItem("dislikedVideos", JSON.stringify(dislikedVideos));
+      localStorage.setItem('dislikedVideos', JSON.stringify(dislikedVideos))
+    }
+  }
+
+  formatVideoData = video => ({
+    ...video,
+    thumbnailUrl: video.thumbnail_url,
+    viewCount: video.view_count,
+    publishedAt: video.published_at,
+    videoUrl: video.video_url,
+    channel: {
+      ...video.channel,
+      profileImageUrl: video.channel?.profile_image_url,
+    },
+  })
+
+  getSavedVideos = async () => {
+    const data = await apiRequest({
+      endpoint: '/saved-videos',
+      method: 'GET',
+    })
+
+    if (data.success === false) {
+      return
+    }
+
+    const formattedSavedVideos = (data.savedVideos || []).map(item =>
+      this.formatVideoData(item.video),
+    )
+
+    this.setState({
+      savedVideos: formattedSavedVideos,
+    })
+  }
+
+  addSavedVideo = async video => {
+    const payload = {
+      ...video,
+      thumbnail_url: video.thumbnail_url || video.thumbnailUrl,
+      view_count: video.view_count || video.viewCount,
+      published_at: video.published_at || video.publishedAt,
+      video_url: video.video_url || video.videoUrl,
+      channel: {
+        ...video.channel,
+        profile_image_url:
+          video.channel?.profile_image_url || video.channel?.profileImageUrl,
+      },
+    }
+
+    const data = await apiRequest({
+      endpoint: '/saved-videos',
+      method: 'POST',
+      body: payload,
+    })
+
+    if (data.success === false || !data.savedVideo) {
+      console.error('Failed to save video:', data)
+      return
+    }
+
+    const formattedSavedVideo = this.formatVideoData(data.savedVideo.video)
+
+    this.setState(prevState => {
+      const filteredSavedVideos = prevState.savedVideos.filter(
+        each => each.id !== formattedSavedVideo.id,
+      )
+
+      return {
+        savedVideos: [formattedSavedVideo, ...filteredSavedVideos],
+      }
+    })
+  }
+
+  removeSavedVideo = async id => {
+    const data = await apiRequest({
+      endpoint: `/saved-videos/${id}`,
+      method: 'DELETE',
+    })
+
+    if (data.success === false) {
+      return
+    }
+
+    this.setState(prevState => ({
+      savedVideos: prevState.savedVideos.filter(each => each.id !== id),
+    }))
+  }
+
+  toggleSaveVideo = async video => {
+    const {savedVideos} = this.state
+    const exists = savedVideos.find(each => each.id === video.id)
+
+    if (exists) {
+      await this.removeSavedVideo(video.id)
+    } else {
+      await this.addSavedVideo(video)
     }
   }
 
   getHistoryVideos = async () => {
     const data = await apiRequest({
-      endpoint: "/history",
-      method: "GET",
-    });
+      endpoint: '/history',
+      method: 'GET',
+    })
 
     if (data.success === false) {
-      return;
+      return
     }
 
-    const formattedHistory = (data.historyVideos || []).map((item) => ({
+    const formattedHistory = (data.historyVideos || []).map(item => ({
       ...item,
-      video: {
-        ...item.video,
-        thumbnailUrl: item.video.thumbnail_url,
-        viewCount: item.video.view_count,
-        publishedAt: item.video.published_at,
-        videoUrl: item.video.video_url,
-        channel: {
-          ...item.video.channel,
-          profileImageUrl: item.video.channel?.profile_image_url,
-        },
-      },
-    }));
+      video: this.formatVideoData(item.video),
+    }))
 
     this.setState({
       historyVideos: formattedHistory,
-    });
-  };
+    })
+  }
 
   clearHistoryVideos = async () => {
     const data = await apiRequest({
-      endpoint: "/history",
-      method: "DELETE",
-    });
+      endpoint: '/history',
+      method: 'DELETE',
+    })
 
     if (data.success === false) {
-      return;
+      return
     }
 
-    this.setState({ historyVideos: [] });
-  };
+    this.setState({historyVideos: []})
+  }
 
   toggleTheme = () => {
-    this.setState((prevState) => ({ isDarkMode: !prevState.isDarkMode }));
-  };
+    this.setState(prevState => ({isDarkMode: !prevState.isDarkMode}))
+  }
 
-  toggleSaveVideo = (video) => {
-    this.setState((prevState) => {
-      const exists = prevState.savedVideos.find((each) => each.id === video.id);
-
-      if (exists) {
-        return {
-          savedVideos: prevState.savedVideos.filter(
-            (each) => each.id !== video.id,
-          ),
-        };
-      }
-
-      return {
-        savedVideos: [video, ...prevState.savedVideos],
-      };
-    });
-  };
-
-  likeVideo = (video) => {
-    this.setState((prevState) => {
-      const exists = prevState.likedVideos.find((each) => each.id === video.id);
+  likeVideo = video => {
+    this.setState(prevState => {
+      const exists = prevState.likedVideos.find(each => each.id === video.id)
 
       if (exists) {
-        return null;
+        return null
       }
 
       return {
         likedVideos: [video, ...prevState.likedVideos],
         dislikedVideos: prevState.dislikedVideos.filter(
-          (each) => each.id !== video.id,
+          each => each.id !== video.id,
         ),
-      };
-    });
-  };
+      }
+    })
+  }
 
-  dislikeVideo = (video) => {
-    this.setState((prevState) => {
-      const exists = prevState.dislikedVideos.find(
-        (each) => each.id === video.id,
-      );
+  dislikeVideo = video => {
+    this.setState(prevState => {
+      const exists = prevState.dislikedVideos.find(each => each.id === video.id)
 
       if (exists) {
         return {
           dislikedVideos: prevState.dislikedVideos.filter(
-            (each) => each.id !== video.id,
+            each => each.id !== video.id,
           ),
-        };
+        }
       }
 
       return {
         dislikedVideos: [...prevState.dislikedVideos, video],
-        likedVideos: prevState.likedVideos.filter(
-          (each) => each.id !== video.id,
-        ),
-      };
-    });
-  };
+        likedVideos: prevState.likedVideos.filter(each => each.id !== video.id),
+      }
+    })
+  }
 
-  removeLike = (video) => {
-    this.setState((prevState) => ({
-      likedVideos: prevState.likedVideos.filter((each) => each.id !== video.id),
-    }));
-  };
+  removeLike = video => {
+    this.setState(prevState => ({
+      likedVideos: prevState.likedVideos.filter(each => each.id !== video.id),
+    }))
+  }
 
-  addToHistory = async (video) => {
-    const data = await apiRequest({
-      endpoint: "/history",
-      method: "POST",
-      body: video,
-    });
-
-    if (data.success === false || !data.historyVideo) {
-      console.error("Failed to add history:", data);
-      return;
+  addToHistory = async video => {
+    const payload = {
+      ...video,
+      thumbnail_url: video.thumbnail_url || video.thumbnailUrl,
+      view_count: video.view_count || video.viewCount,
+      published_at: video.published_at || video.publishedAt,
+      video_url: video.video_url || video.videoUrl,
+      channel: {
+        ...video.channel,
+        profile_image_url:
+          video.channel?.profile_image_url || video.channel?.profileImageUrl,
+      },
     }
 
-    const item = data.historyVideo;
+    const data = await apiRequest({
+      endpoint: '/history',
+      method: 'POST',
+      body: payload,
+    })
+
+    if (data.success === false || !data.historyVideo) {
+      console.error('Failed to add history:', data)
+      return
+    }
+
+    const item = data.historyVideo
 
     const formattedHistoryItem = {
       ...item,
-      video: {
-        ...item.video,
-        thumbnailUrl: item.video.thumbnail_url,
-        viewCount: item.video.view_count,
-        publishedAt: item.video.published_at,
-        videoUrl: item.video.video_url,
-        channel: {
-          ...item.video.channel,
-          profileImageUrl: item.video.channel?.profile_image_url,
-        },
-      },
-    };
+      video: this.formatVideoData(item.video),
+    }
 
-    this.setState((prevState) => {
+    this.setState(prevState => {
       const filteredHistory = prevState.historyVideos.filter(
-        (each) => each.videoId !== formattedHistoryItem.videoId,
-      );
+        each => each.videoId !== formattedHistoryItem.videoId,
+      )
 
       return {
         historyVideos: [formattedHistoryItem, ...filteredHistory],
-      };
-    });
-  };
+      }
+    })
+  }
 
   refreshHistory = async () => {
-    await this.getHistoryVideos();
-  };
+    await this.getHistoryVideos()
+  }
 
-  removeSavedVideo = (id) => {
-    this.setState((prevState) => ({
-      savedVideos: prevState.savedVideos.filter((each) => each.id !== id),
-    }));
-  };
-
-  removeHistoryVideo = async (videoId) => {
+  removeHistoryVideo = async videoId => {
     const data = await apiRequest({
       endpoint: `/history/${videoId}`,
-      method: "DELETE",
-    });
+      method: 'DELETE',
+    })
 
     if (data.success === false) {
-      return;
+      return
     }
 
-    this.setState((prevState) => ({
+    this.setState(prevState => ({
       historyVideos: prevState.historyVideos.filter(
-        (each) => each.videoId !== videoId,
+        each => each.videoId !== videoId,
       ),
-    }));
-  };
+    }))
+  }
 
-  removeLikedVideo = (id) => {
-    this.setState((prevState) => ({
-      likedVideos: prevState.likedVideos.filter((each) => each.id !== id),
-    }));
-  };
+  removeLikedVideo = id => {
+    this.setState(prevState => ({
+      likedVideos: prevState.likedVideos.filter(each => each.id !== id),
+    }))
+  }
 
   render() {
     return (
@@ -246,6 +303,8 @@ class App extends Component {
           removeLikedVideo: this.removeLikedVideo,
           refreshHistory: this.refreshHistory,
           getHistoryVideos: this.getHistoryVideos,
+          getSavedVideos: this.getSavedVideos,
+          addSavedVideo: this.addSavedVideo,
         }}
       >
         <Switch>
@@ -260,8 +319,8 @@ class App extends Component {
           <Route component={NotFound} />
         </Switch>
       </BackgroundContext.Provider>
-    );
+    )
   }
 }
 
-export default App;
+export default App
