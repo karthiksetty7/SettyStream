@@ -1,4 +1,3 @@
-// server/routes/historyRoutes.js
 import express from 'express'
 import {
   getHistoryVideos,
@@ -12,7 +11,7 @@ const router = express.Router()
 
 router.get('/', protect, getHistoryVideos)
 router.post('/', protect, addHistoryVideo)
-router.delete('/', protect, clearHistoryVideos)
+router.delete('/clear', protect, clearHistoryVideos)
 router.delete('/:videoId', protect, removeHistoryVideo)
 
 export default router
