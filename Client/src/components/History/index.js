@@ -14,16 +14,18 @@ const History = () => {
   const menuRef = useRef(null)
 
   const {
-    historyVideos,
+    historyVideos = [],
     isDarkMode,
     clearHistoryVideos,
     removeHistoryVideo,
-    refreshHistory,
+    getHistoryVideos,
   } = useContext(BackgroundContext)
 
   useEffect(() => {
-    refreshHistory()
-  }, [refreshHistory])
+    if (getHistoryVideos) {
+      getHistoryVideos()
+    }
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = event => {
@@ -33,13 +35,19 @@ const History = () => {
     }
 
     document.addEventListener('mousedown', handleClickOutside)
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
 
   const pageClassName = `common-page ${isDarkMode ? 'common-page--dark' : ''}`
-  const hasHistory = historyVideos.length > 0
+
+  const validHistoryVideos = historyVideos.filter(
+    item => item && item.videoId && item.video && item.video.id,
+  )
+
+  const hasHistory = validHistoryVideos.length > 0
 
   const onClickDeleteAll = async () => {
     const confirmed = window.confirm(
@@ -47,8 +55,10 @@ const History = () => {
     )
 
     if (confirmed) {
-      await clearHistoryVideos()
-      setIsMenuOpen(false)
+      const success = await clearHistoryVideos()
+      if (success) {
+        setIsMenuOpen(false)
+      }
     }
   }
 
@@ -86,7 +96,7 @@ const History = () => {
                       className="common-page__dropdown-item common-page__dropdown-item--danger"
                       onClick={onClickDeleteAll}
                     >
-                      Clear all watch History
+                      Clear all watch history
                     </button>
                   </div>
                 )}
@@ -96,10 +106,14 @@ const History = () => {
 
           {hasHistory ? (
             <ul className="common-page__grid">
-              {historyVideos.map(({video}) => (
-                <li key={video.id}>
+              {validHistoryVideos.map(item => (
+                <li key={item.videoId}>
                   <CommonVideosList
-                    eachVideo={video}
+                    eachVideo={{
+                      ...item.video,
+                      watchedAt: item.watchedAt,
+                      videoId: item.videoId,
+                    }}
                     onDeleteVideo={removeHistoryVideo}
                     deleteLabel="Remove from Watch History"
                   />
