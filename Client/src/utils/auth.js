@@ -3,11 +3,11 @@ import Cookies from 'js-cookie'
 export const handleAuthError = history => {
   alert('Session expired. Please login again.')
 
-  Cookies.remove('token')
   Cookies.remove('jwt_token')
+  Cookies.remove('token')
 
-  localStorage.removeItem('token')
   localStorage.removeItem('jwt_token')
+  localStorage.removeItem('token')
   localStorage.removeItem('user_id')
   localStorage.removeItem('username')
   localStorage.removeItem('user_name')
