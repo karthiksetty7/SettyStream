@@ -48,20 +48,20 @@ class SpecificVideo extends Component {
   });
 
   getHistoryPayload = data => ({
-  id: data.id,
-  title: data.title,
-  thumbnail_url: data.thumbnail_url || '',
-  view_count: data.view_count || '',
-  published_at: data.published_at || '',
-  channel: {
-    name: data.channel?.name || 'Unknown Channel',
-    profile_image_url:
-      data.channel?.profile_image_url ||
-      'https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png',
-  },
-  category: data.category || '',
-  video_url: data.video_url || '',
-})
+    id: data.id,
+    title: data.title,
+    thumbnail_url: data.thumbnail_url || '',
+    view_count: data.view_count || '',
+    published_at: data.published_at || '',
+    channel: {
+      name: data.channel?.name || 'Unknown Channel',
+      profile_image_url:
+        data.channel?.profile_image_url ||
+        'https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png',
+    },
+    category: data.category || '',
+    video_url: data.video_url || '',
+  })
 
   getVideoDetails = async () => {
     this.setState({ apiStatus: apiStatusConstants.LOADING });
@@ -85,7 +85,7 @@ class SpecificVideo extends Component {
           apiStatus: apiStatusConstants.SUCCESS,
         });
 
-        // Use this.context.addToHistory with backend-compatible payload
+        // Use backend-compatible addToHistory
         await this.context.addToHistory(historyPayload);
       } else {
         this.setState({ apiStatus: apiStatusConstants.FAILURE });
@@ -95,30 +95,42 @@ class SpecificVideo extends Component {
     }
   };
 
-  onClickLike = (videoDetails) => {
+  onClickLike = async (videoDetails) => {
     const { likedVideos, likeVideo, removeLike } = this.context;
     const isLiked = likedVideos.find(
       (eachVideo) => eachVideo.id === videoDetails.id,
     );
 
     if (isLiked) {
-      removeLike(videoDetails);
+      await this.context.removeLike(videoDetails);
     } else {
-      likeVideo(videoDetails);
+      await this.context.likeVideo(videoDetails);
     }
   };
 
-  onClickDislike = (videoDetails) => {
-    const { dislikedVideos, dislikeVideo } = this.context;
+  onClickDislike = async (videoDetails) => {
+    const { dislikedVideos, dislikedVideos, dislikeVideo } = this.context;
     const isDisliked = dislikedVideos.find(
       (eachVideo) => eachVideo.id === videoDetails.id,
     );
 
     if (isDisliked) {
-      return;
+      // Remove from disliked if already disliked
+      await this.context.removeDislikedVideo(videoDetails.id);
+    } else {
+      // Remove from liked if liked, then dislike
+      const isLiked = likedVideos.find(
+        (eachVideo) => eachVideo.id === videoDetails.id,
+      );
+      if (isLiked) {
+        await this.context.removeLike(videoDetails);
+      }
+      await this.context.dislikeVideo(videoDetails);
     }
+  };
 
-    dislikeVideo(videoDetails);
+  onClickSave = async (videoDetails) => {
+    await this.context.toggleSaveVideo(videoDetails);
   };
 
   onClickDownload = () => {
@@ -165,11 +177,9 @@ class SpecificVideo extends Component {
     const { videoDetails } = this.state;
     const {
       isDarkMode,
-      toggleSaveVideo,
       savedVideos,
       likedVideos,
       dislikedVideos,
-      downloadedVideos = [],
     } = this.context;
 
     const isSaved = savedVideos.find(
@@ -181,10 +191,7 @@ class SpecificVideo extends Component {
     const isDisliked = dislikedVideos.find(
       (eachVideo) => eachVideo.id === videoDetails.id,
     );
-    const isDownloaded = downloadedVideos.find(
-      (eachVideo) => eachVideo.id === videoDetails.id,
-    );
-
+    
     const { title, videoUrl, viewCount, description, channel } = videoDetails;
 
     return (
@@ -219,19 +226,10 @@ class SpecificVideo extends Component {
               <button
                 type="button"
                 className={`video-btn ${isSaved ? "active-save" : ""}`}
-                onClick={() => toggleSaveVideo(videoDetails)}
+                onClick={() => this.onClickSave(videoDetails)}
               >
                 <BiListPlus />
                 {isSaved ? "Saved" : "Save"}
-              </button>
-
-              <button
-                type="button"
-                className={`video-btn ${isDownloaded ? "active-download" : ""}`}
-                onClick={this.onClickDownload}
-              >
-                <AiOutlineDownload />
-                {isDownloaded ? "Downloaded" : "Download"}
               </button>
             </div>
           </div>
