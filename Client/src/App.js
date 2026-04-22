@@ -342,19 +342,20 @@ class App extends Component {
   }
 
   removeDislikedVideo = async id => {
-    const data = await apiRequest({
-      endpoint: `disliked-videos/${id}`,
-      method: 'DELETE',
-    })
+  const data = await apiRequest({
+    endpoint: `disliked-videos/${id}`,
+    method: 'DELETE',
+  })
 
-    if (!data.success) return false
+  if (!data.success) return false
 
-    this.setState(prevState => ({
-      dislikedVideos: prevState.dislikedVideos.filter(each => each.id !== id),
-    }))
+  this.setState(prevState => ({
+    dislikedVideos: prevState.dislikedVideos.filter(each => each.id !== id),
+  }))
 
-    return true
-  }
+  return true
+}
+
 
   toggleTheme = () => {
     this.setState(prevState => ({
