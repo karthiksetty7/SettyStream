@@ -5,6 +5,7 @@ import videoRoutes from './routes/videoRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 import historyRoutes from './routes/historyRoutes.js'
 import savedVideoRoutes from './routes/savedVideoRoutes.js'
+import likedVideoRoutes from './routes/likedVideoRoutes.js'
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/videos', videoRoutes)
 app.use('/api/history', historyRoutes)
 app.use('/api/saved-videos', savedVideoRoutes)
+app.use('/api/liked-videos', likedVideoRoutes)
 
 app.use((req, res) => {
   res.status(404).json({
