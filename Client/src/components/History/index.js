@@ -22,9 +22,7 @@ const History = () => {
   } = useContext(BackgroundContext)
 
   useEffect(() => {
-    if (refreshHistory) {
-      refreshHistory()
-    }
+    refreshHistory()
   }, [refreshHistory])
 
   useEffect(() => {
@@ -35,7 +33,6 @@ const History = () => {
     }
 
     document.addEventListener('mousedown', handleClickOutside)
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
@@ -44,13 +41,13 @@ const History = () => {
   const pageClassName = `common-page ${isDarkMode ? 'common-page--dark' : ''}`
   const hasHistory = historyVideos.length > 0
 
-  const onClickDeleteAll = () => {
+  const onClickDeleteAll = async () => {
     const confirmed = window.confirm(
       'Are you sure you want to delete all history videos?',
     )
 
     if (confirmed) {
-      clearHistoryVideos()
+      await clearHistoryVideos()
       setIsMenuOpen(false)
     }
   }
