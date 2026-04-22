@@ -37,3 +37,4 @@ export const protect = (request, response, next) => {
 }
 
 export const authenticateToken = protect
+export default protect
