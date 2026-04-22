@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react'
 
 const BackgroundContext = React.createContext({
   isDarkMode: false,
@@ -6,19 +6,17 @@ const BackgroundContext = React.createContext({
   likedVideos: [],
   dislikedVideos: [],
   historyVideos: [],
-  downloadedVideos: [],
   toggleTheme: () => {},
   toggleSaveVideo: () => {},
   likeVideo: () => {},
   dislikeVideo: () => {},
   removeLike: () => {},
-  addToHistory: () => {},
-  addToDownloads: () => {},
-  clearHistoryVideos: () => {},
+  addToHistory: async () => {},
+  getHistoryVideos: async () => {},
+  clearHistoryVideos: async () => {},
   removeSavedVideo: () => {},
-  removeDownloadedVideo: () => {},
-  removeHistoryVideo: () => {},
+  removeHistoryVideo: async () => {},
   removeLikedVideo: () => {},
-});
+})
 
-export default BackgroundContext;
+export default BackgroundContext
