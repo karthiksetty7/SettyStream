@@ -13,6 +13,7 @@ class Login extends Component {
     password: '',
     showPasswd: false,
     errMsg: '',
+    isLoading: false,
   }
 
   verifyUserCredientials = async event => {
@@ -20,6 +21,11 @@ class Login extends Component {
 
     const {loginId, password} = this.state
     const {history} = this.props
+
+    this.setState({
+      errMsg: '',
+      isLoading: true,
+    })
 
     const data = await apiRequest({
       endpoint: '/auth/login',
@@ -36,68 +42,83 @@ class Login extends Component {
       Cookies.set('token', data.token, {expires: 30})
       localStorage.setItem('token', data.token)
 
-      console.log('Token saved:', data.token)
-      console.log('Redirecting...')
+      if (data.user_id) {
+        localStorage.setItem('user_id', data.user_id)
+      } else if (data.id) {
+        localStorage.setItem('user_id', data.id)
+      }
 
+      if (data.username) {
+        localStorage.setItem('username', data.username)
+      }
+
+      if (data.name) {
+        localStorage.setItem('user_name', data.name)
+      }
+
+      window.dispatchEvent(new Event('auth-change'))
       history.replace('/')
     } else {
       this.setState({errMsg: data?.message || 'Login failed'})
     }
+
+    this.setState({isLoading: false})
   }
 
   render() {
     const token = Cookies.get('token') || localStorage.getItem('token')
 
     if (token) {
-      return <Redirect to='/' />
+      return <Redirect to="/" />
     }
 
-    const {loginId, password, showPasswd, errMsg} = this.state
+    const {loginId, password, showPasswd, errMsg, isLoading} = this.state
 
     return (
-      <div className='login'>
-        <div className='login__card'>
-          <img src={logo} alt='website logo' className='login__logo' />
+      <div className="login">
+        <div className="login__card">
+          <img src={logo} alt="website logo" className="login__logo" />
 
-          <form className='login__form' onSubmit={this.verifyUserCredientials}>
-            <label htmlFor='loginId' className='login__label'>
+          <form className="login__form" onSubmit={this.verifyUserCredientials}>
+            <label htmlFor="loginId" className="login__label">
               USERNAME OR EMAIL
             </label>
             <input
-              id='loginId'
-              type='text'
-              placeholder='Enter Username or Email'
+              id="loginId"
+              type="text"
+              placeholder="Enter Username or Email"
               value={loginId}
               onChange={e => this.setState({loginId: e.target.value})}
-              className='login__input'
+              className="login__input"
             />
 
-            <label htmlFor='password' className='login__label'>
+            <label htmlFor="password" className="login__label">
               PASSWORD
             </label>
             <input
-              id='password'
+              id="password"
               type={showPasswd ? 'text' : 'password'}
-              placeholder='Enter Password'
+              placeholder="Enter Password"
               value={password}
               onChange={e => this.setState({password: e.target.value})}
-              className='login__input'
+              className="login__input"
             />
 
-            <div className='login__checkbox'>
+            <div className="login__checkbox">
               <input
-                id='showPassword'
-                type='checkbox'
+                id="showPassword"
+                type="checkbox"
+                checked={showPasswd}
                 onChange={e => this.setState({showPasswd: e.target.checked})}
               />
-              <label htmlFor='showPassword'>Show Password</label>
+              <label htmlFor="showPassword">Show Password</label>
             </div>
 
-            <button type='submit' className='login__btn'>
-              Login
+            <button type="submit" className="login__btn" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
 
-            {errMsg && <p className='login__error'>{errMsg}</p>}
+            {errMsg && <p className="login__error">{errMsg}</p>}
           </form>
         </div>
       </div>
