@@ -18,7 +18,6 @@ const navItems = [
   {path: '/saved-videos', label: 'Saved Videos', icon: BiListPlus},
   {path: '/liked-videos', label: 'Liked Videos', icon: AiFillLike},
   {path: '/history', label: 'History', icon: MdHistory},
-  {path: '/downloads', label: 'Downloads', icon: AiOutlineDownload},
 ]
 
 const LeftNavBar = props => (
