@@ -16,7 +16,16 @@ const Header = props => (
       const {isDarkMode, toggleTheme} = value
 
       const onLogout = () => {
+        Cookies.remove('token')
         Cookies.remove('jwt_token')
+
+        localStorage.removeItem('token')
+        localStorage.removeItem('jwt_token')
+        localStorage.removeItem('user_id')
+        localStorage.removeItem('username')
+        localStorage.removeItem('user_name')
+
+        window.dispatchEvent(new Event('auth-change'))
         props.history.replace('/login')
       }
 
@@ -24,11 +33,11 @@ const Header = props => (
         <div
           className={`header__popup ${isDarkMode ? 'header__popup--dark' : ''}`}
         >
-          <p className='header__popup-text'>Are you sure you want to logout?</p>
+          <p className="header__popup-text">Are you sure you want to logout?</p>
 
-          <div className='header__popup-actions'>
+          <div className="header__popup-actions">
             <button
-              type='button'
+              type="button"
               className={`btn btn--outline ${
                 isDarkMode ? 'btn--outline-dark' : ''
               }`}
@@ -38,9 +47,12 @@ const Header = props => (
             </button>
 
             <button
-              type='button'
-              className='btn btn--primary'
-              onClick={onLogout}
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                close()
+                onLogout()
+              }}
             >
               Confirm
             </button>
@@ -50,42 +62,38 @@ const Header = props => (
 
       return (
         <nav className={`header ${isDarkMode ? 'header--dark' : ''}`}>
-          {/* LOGO */}
-          <Link to='/' className='header__logo-container'>
+          <Link to="/" className="header__logo-container">
             <img
               src={isDarkMode ? darkLogo : logo}
-              alt='website logo'
-              className='header__logo'
+              alt="website logo"
+              className="header__logo"
             />
           </Link>
 
-          {/* RIGHT SIDE */}
-          <div className='header__actions'>
-            {/* THEME */}
+          <div className="header__actions">
             <button
-              type='button'
-              className='header__icon-btn'
+              type="button"
+              className="header__icon-btn"
               onClick={toggleTheme}
+              aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
             >
               {isDarkMode ? (
-                <BsSun size={22} color='#fff' />
+                <BsSun size={22} color="#fff" />
               ) : (
                 <BsMoon size={22} />
               )}
             </button>
 
-            {/* PROFILE */}
             <img
-              src='https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png'
-              alt='profile'
-              className='header__profile'
+              src="https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png"
+              alt="profile"
+              className="header__profile"
             />
 
-            {/* DESKTOP LOGOUT */}
             <Popup
               modal
               trigger={
-                <button type='button' className='header__logout-btn'>
+                <button type="button" className="header__logout-btn">
                   Logout
                 </button>
               }
@@ -93,13 +101,13 @@ const Header = props => (
               {renderPopup}
             </Popup>
 
-            {/* MOBILE LOGOUT ICON */}
             <Popup
               modal
               trigger={
                 <button
-                  type='button'
-                  className='header__icon-btn header__logout-icon'
+                  type="button"
+                  className="header__icon-btn header__logout-icon"
+                  aria-label="Logout"
                 >
                   <BsBoxArrowRight
                     size={22}
