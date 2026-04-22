@@ -23,71 +23,171 @@ class App extends Component {
     likedVideos: [],
     dislikedVideos: [],
     historyVideos: [],
+    authToken: localStorage.getItem('jwt_token') || '',
+    activeUserKey: localStorage.getItem('user_id') || '',
+    isUserDataLoading: false,
   }
 
+  savedRequestId = 0
+  likedRequestId = 0
+  dislikedRequestId = 0
+  historyRequestId = 0
+  bootstrapRequestId = 0
+
   componentDidMount() {
-    this.getHistoryVideos()
-    this.getSavedVideos()
-    this.getLikedVideos()
-    this.getDislikedVideos()
+    this.bootstrapUserData()
+    window.addEventListener('storage', this.handleStorageChange)
+    window.addEventListener('auth-change', this.handleAuthChange)
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('storage', this.handleStorageChange)
+    window.removeEventListener('auth-change', this.handleAuthChange)
+  }
+
+  getAuthSnapshot = () => ({
+    authToken: localStorage.getItem('jwt_token') || '',
+    activeUserKey:
+      localStorage.getItem('user_id') ||
+      localStorage.getItem('username') ||
+      localStorage.getItem('user_name') ||
+      '',
+  })
+
+  handleStorageChange = event => {
+    if (
+      event.key === 'jwt_token' ||
+      event.key === 'user_id' ||
+      event.key === 'username' ||
+      event.key === 'user_name'
+    ) {
+      this.bootstrapUserData()
+    }
+  }
+
+  handleAuthChange = () => {
+    this.bootstrapUserData()
+  }
+
+  clearUserVideoState = callback => {
+    this.setState(
+      {
+        savedVideos: [],
+        likedVideos: [],
+        dislikedVideos: [],
+        historyVideos: [],
+      },
+      callback,
+    )
+  }
+
+  bootstrapUserData = async () => {
+    const {authToken, activeUserKey} = this.getAuthSnapshot()
+    const currentBootstrapId = Date.now()
+    this.bootstrapRequestId = currentBootstrapId
+
+    const authChanged =
+      authToken !== this.state.authToken ||
+      activeUserKey !== this.state.activeUserKey
+
+    if (authChanged) {
+      this.setState({
+        authToken,
+        activeUserKey,
+      })
+      this.clearUserVideoState()
+    }
+
+    if (!authToken) {
+      this.setState({
+        authToken: '',
+        activeUserKey: '',
+        isUserDataLoading: false,
+      })
+      this.clearUserVideoState()
+      return
+    }
+
+    this.setState({isUserDataLoading: true})
+
+    await Promise.all([
+      this.getSavedVideos({silent: true, force: true}),
+      this.getLikedVideos({silent: true, force: true}),
+      this.getDislikedVideos({silent: true, force: true}),
+      this.getHistoryVideos({silent: true, force: true}),
+    ])
+
+    if (this.bootstrapRequestId === currentBootstrapId) {
+      this.setState({isUserDataLoading: false})
+    }
   }
 
   formatVideoData = video => ({
     ...video,
-    thumbnailUrl: video.thumbnail_url,
-    viewCount: video.view_count,
-    publishedAt: video.published_at,
-    videoUrl: video.video_url,
+    thumbnailUrl: video.thumbnailurl || video.thumbnailUrl || '',
+    viewCount: video.viewcount || video.viewCount || '',
+    publishedAt: video.publishedat || video.publishedAt || '',
+    videoUrl: video.videourl || video.videoUrl || '',
     channel: {
       ...video.channel,
-      profileImageUrl: video.channel?.profile_image_url,
+      profileImageUrl:
+        video.channel?.profileimageurl || video.channel?.profileImageUrl || '',
     },
   })
 
   normalizeVideoPayload = video => ({
-    ...video,
-    thumbnail_url: video.thumbnail_url || video.thumbnailUrl,
-    view_count: video.view_count || video.viewCount,
-    published_at: video.published_at || video.publishedAt,
-    video_url: video.video_url || video.videoUrl,
+    id: video.id,
+    title: video.title,
+    thumbnailurl: video.thumbnailurl || video.thumbnailUrl || '',
+    viewcount: video.viewcount || video.viewCount || '',
+    publishedat: video.publishedat || video.publishedAt || '',
+    videourl: video.videourl || video.videoUrl || '',
+    description: video.description || '',
+    category: video.category || '',
     channel: {
-      ...video.channel,
-      profile_image_url:
-        video.channel?.profile_image_url || video.channel?.profileImageUrl,
+      name: video.channel?.name || 'Unknown Channel',
+      profileimageurl:
+        video.channel?.profileimageurl || video.channel?.profileImageUrl || '',
+      subscribercount:
+        video.channel?.subscribercount || video.channel?.subscriberCount || '',
     },
   })
 
-  getSavedVideos = async () => {
+  getSavedVideos = async (options = {}) => {
+    const {silent = false} = options
+    const requestId = Date.now()
+    this.savedRequestId = requestId
+
     const data = await apiRequest({
-      endpoint: '/saved-videos',
+      endpoint: 'saved-videos',
       method: 'GET',
     })
 
-    if (data.success === false) {
+    if (this.savedRequestId !== requestId) return
+    if (!data.success) {
+      if (!silent) this.setState({savedVideos: []})
       return
     }
 
-    const formattedSavedVideos = (data.savedVideos || []).map(item =>
+    const formattedSavedVideos = data.savedVideos.map(item =>
       this.formatVideoData(item.video),
     )
 
-    this.setState({
-      savedVideos: formattedSavedVideos,
-    })
+    this.setState({savedVideos: formattedSavedVideos})
   }
 
   addSavedVideo = async video => {
     const payload = this.normalizeVideoPayload(video)
 
     const data = await apiRequest({
-      endpoint: '/saved-videos',
+      endpoint: 'saved-videos',
       method: 'POST',
       body: payload,
     })
 
-    if (data.success === false || !data.savedVideo) {
-      console.error('Failed to save video:', data)
-      return
+    if (!data.success || !data.savedVideo) {
+      console.error('Failed to save video', data)
+      return false
     }
 
     const formattedSavedVideo = this.formatVideoData(data.savedVideo.video)
@@ -101,21 +201,23 @@ class App extends Component {
         savedVideos: [formattedSavedVideo, ...filteredSavedVideos],
       }
     })
+
+    return true
   }
 
   removeSavedVideo = async id => {
     const data = await apiRequest({
-      endpoint: `/saved-videos/${id}`,
+      endpoint: `saved-videos/${id}`,
       method: 'DELETE',
     })
 
-    if (data.success === false) {
-      return
-    }
+    if (!data.success) return false
 
     this.setState(prevState => ({
       savedVideos: prevState.savedVideos.filter(each => each.id !== id),
     }))
+
+    return true
   }
 
   toggleSaveVideo = async video => {
@@ -123,42 +225,46 @@ class App extends Component {
     const exists = savedVideos.find(each => each.id === video.id)
 
     if (exists) {
-      await this.removeSavedVideo(video.id)
-    } else {
-      await this.addSavedVideo(video)
+      return this.removeSavedVideo(video.id)
     }
+
+    return this.addSavedVideo(video)
   }
 
-  getLikedVideos = async () => {
+  getLikedVideos = async (options = {}) => {
+    const {silent = false} = options
+    const requestId = Date.now()
+    this.likedRequestId = requestId
+
     const data = await apiRequest({
-      endpoint: '/liked-videos',
+      endpoint: 'liked-videos',
       method: 'GET',
     })
 
-    if (data.success === false) {
+    if (this.likedRequestId !== requestId) return
+    if (!data.success) {
+      if (!silent) this.setState({likedVideos: []})
       return
     }
 
-    const formattedLikedVideos = (data.likedVideos || []).map(item =>
+    const formattedLikedVideos = data.likedVideos.map(item =>
       this.formatVideoData(item.video),
     )
 
-    this.setState({
-      likedVideos: formattedLikedVideos,
-    })
+    this.setState({likedVideos: formattedLikedVideos})
   }
 
   addLikedVideo = async video => {
     const payload = this.normalizeVideoPayload(video)
 
     const data = await apiRequest({
-      endpoint: '/liked-videos',
+      endpoint: 'liked-videos',
       method: 'POST',
       body: payload,
     })
 
-    if (data.success === false || !data.likedVideo) {
-      console.error('Failed to like video:', data)
+    if (!data.success || !data.likedVideo) {
+      console.error('Failed to like video', data)
       return false
     }
 
@@ -182,13 +288,11 @@ class App extends Component {
 
   removeLikedVideo = async id => {
     const data = await apiRequest({
-      endpoint: `/liked-videos/${id}`,
+      endpoint: `liked-videos/${id}`,
       method: 'DELETE',
     })
 
-    if (data.success === false) {
-      return false
-    }
+    if (!data.success) return false
 
     this.setState(prevState => ({
       likedVideos: prevState.likedVideos.filter(each => each.id !== id),
@@ -197,36 +301,40 @@ class App extends Component {
     return true
   }
 
-  getDislikedVideos = async () => {
+  getDislikedVideos = async (options = {}) => {
+    const {silent = false} = options
+    const requestId = Date.now()
+    this.dislikedRequestId = requestId
+
     const data = await apiRequest({
-      endpoint: '/disliked-videos',
+      endpoint: 'disliked-videos',
       method: 'GET',
     })
 
-    if (data.success === false) {
+    if (this.dislikedRequestId !== requestId) return
+    if (!data.success) {
+      if (!silent) this.setState({dislikedVideos: []})
       return
     }
 
-    const formattedDislikedVideos = (data.dislikedVideos || []).map(item =>
+    const formattedDislikedVideos = data.dislikedVideos.map(item =>
       this.formatVideoData(item.video),
     )
 
-    this.setState({
-      dislikedVideos: formattedDislikedVideos,
-    })
+    this.setState({dislikedVideos: formattedDislikedVideos})
   }
 
   toggleDislikedVideo = async video => {
     const payload = this.normalizeVideoPayload(video)
 
     const data = await apiRequest({
-      endpoint: '/disliked-videos',
+      endpoint: 'disliked-videos',
       method: 'POST',
       body: payload,
     })
 
-    if (data.success === false) {
-      console.error('Failed to toggle disliked video:', data)
+    if (!data.success) {
+      console.error('Failed to toggle disliked video', data)
       return null
     }
 
@@ -235,13 +343,11 @@ class App extends Component {
 
   removeDislikedVideo = async id => {
     const data = await apiRequest({
-      endpoint: `/disliked-videos/${id}`,
+      endpoint: `disliked-videos/${id}`,
       method: 'DELETE',
     })
 
-    if (data.success === false) {
-      return false
-    }
+    if (!data.success) return false
 
     this.setState(prevState => ({
       dislikedVideos: prevState.dislikedVideos.filter(each => each.id !== id),
@@ -251,15 +357,14 @@ class App extends Component {
   }
 
   toggleTheme = () => {
-    this.setState(prevState => ({isDarkMode: !prevState.isDarkMode}))
+    this.setState(prevState => ({
+      isDarkMode: !prevState.isDarkMode,
+    }))
   }
 
   likeVideo = async video => {
     const exists = this.state.likedVideos.find(each => each.id === video.id)
-
-    if (exists) {
-      return
-    }
+    if (exists) return false
 
     const added = await this.addLikedVideo(video)
 
@@ -270,14 +375,14 @@ class App extends Component {
         ),
       }))
     }
+
+    return added
   }
 
   dislikeVideo = async video => {
     const response = await this.toggleDislikedVideo(video)
 
-    if (!response) {
-      return
-    }
+    if (!response) return null
 
     if (response.action === 'removed') {
       this.setState(prevState => ({
@@ -285,7 +390,7 @@ class App extends Component {
           each => each.id !== video.id,
         ),
       }))
-      return
+      return response
     }
 
     if (response.action === 'added') {
@@ -306,61 +411,63 @@ class App extends Component {
         }
       })
     }
+
+    return response
   }
 
-  removeLike = async video => {
-    await this.removeLikedVideo(video.id)
-  }
+  removeLike = async video => this.removeLikedVideo(video.id)
 
-  getHistoryVideos = async () => {
+  getHistoryVideos = async (options = {}) => {
+    const {silent = false} = options
+    const requestId = Date.now()
+    this.historyRequestId = requestId
+
     const data = await apiRequest({
-      endpoint: '/history',
+      endpoint: 'history',
       method: 'GET',
     })
 
-    if (data.success === false) {
+    if (this.historyRequestId !== requestId) return
+    if (!data.success) {
+      if (!silent) this.setState({historyVideos: []})
       return
     }
 
-    const formattedHistory = (data.historyVideos || []).map(item => ({
+    const formattedHistory = data.historyVideos.map(item => ({
       ...item,
       video: this.formatVideoData(item.video),
     }))
 
-    this.setState({
-      historyVideos: formattedHistory,
-    })
+    this.setState({historyVideos: formattedHistory})
   }
 
   clearHistoryVideos = async () => {
     const data = await apiRequest({
-      endpoint: '/history',
+      endpoint: 'history',
       method: 'DELETE',
     })
 
-    if (data.success === false) {
-      return
-    }
+    if (!data.success) return false
 
     this.setState({historyVideos: []})
+    return true
   }
 
   addToHistory = async video => {
     const payload = this.normalizeVideoPayload(video)
 
     const data = await apiRequest({
-      endpoint: '/history',
+      endpoint: 'history',
       method: 'POST',
       body: payload,
     })
 
-    if (data.success === false || !data.historyVideo) {
-      console.error('Failed to add history:', data)
-      return
+    if (!data.success || !data.historyVideo) {
+      console.error('Failed to add history', data)
+      return false
     }
 
     const item = data.historyVideo
-
     const formattedHistoryItem = {
       ...item,
       video: this.formatVideoData(item.video),
@@ -375,27 +482,70 @@ class App extends Component {
         historyVideos: [formattedHistoryItem, ...filteredHistory],
       }
     })
+
+    return true
   }
 
   refreshHistory = async () => {
-    await this.getHistoryVideos()
+    await this.getHistoryVideos({force: true})
   }
 
   removeHistoryVideo = async videoId => {
     const data = await apiRequest({
-      endpoint: `/history/${videoId}`,
+      endpoint: `history/${videoId}`,
       method: 'DELETE',
     })
 
-    if (data.success === false) {
-      return
-    }
+    if (!data.success) return false
 
     this.setState(prevState => ({
       historyVideos: prevState.historyVideos.filter(
         each => each.videoId !== videoId,
       ),
     }))
+
+    return true
+  }
+
+  setAuthenticatedUser = userData => {
+    const token = userData?.token || localStorage.getItem('jwt_token') || ''
+    const activeUserKey =
+      userData?.user_id ||
+      userData?.id ||
+      userData?.username ||
+      localStorage.getItem('user_id') ||
+      ''
+
+    this.setState(
+      {
+        authToken: token,
+        activeUserKey,
+      },
+      () => {
+        this.clearUserVideoState(() => {
+          this.bootstrapUserData()
+        })
+      },
+    )
+  }
+
+  logoutUser = () => {
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('username')
+    localStorage.removeItem('user_name')
+
+    this.setState(
+      {
+        authToken: '',
+        activeUserKey: '',
+      },
+      () => {
+        this.clearUserVideoState()
+      },
+    )
+
+    window.dispatchEvent(new Event('auth-change'))
   }
 
   render() {
@@ -422,6 +572,9 @@ class App extends Component {
           addLikedVideo: this.addLikedVideo,
           getDislikedVideos: this.getDislikedVideos,
           toggleDislikedVideo: this.toggleDislikedVideo,
+          setAuthenticatedUser: this.setAuthenticatedUser,
+          logoutUser: this.logoutUser,
+          bootstrapUserData: this.bootstrapUserData,
         }}
       >
         <Switch>
