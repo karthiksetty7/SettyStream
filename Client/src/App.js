@@ -11,8 +11,8 @@ import Gaming from './components/Gaming'
 import NotFound from './components/NotFound'
 import History from './components/History'
 import LikedVideos from './components/LikedVideos'
-import Downloads from './components/Downloads'
 import BackgroundContext from './BackgroundContext'
+import {apiRequest} from './utils/api'
 
 import './App.css'
 
@@ -22,28 +22,54 @@ class App extends Component {
     savedVideos: JSON.parse(localStorage.getItem('savedVideos')) || [],
     likedVideos: JSON.parse(localStorage.getItem('likedVideos')) || [],
     dislikedVideos: JSON.parse(localStorage.getItem('dislikedVideos')) || [],
-    historyVideos: JSON.parse(localStorage.getItem('historyVideos')) || [],
-    downloadedVideos:
-      JSON.parse(localStorage.getItem('downloadedVideos')) || [],
+    historyVideos: [],
   }
 
-  componentDidUpdate() {
-    const {
-      savedVideos,
-      likedVideos,
-      dislikedVideos,
-      historyVideos,
-      downloadedVideos,
-    } = this.state
-
-    localStorage.setItem('savedVideos', JSON.stringify(savedVideos))
-    localStorage.setItem('likedVideos', JSON.stringify(likedVideos))
-    localStorage.setItem('dislikedVideos', JSON.stringify(dislikedVideos))
-    localStorage.setItem('historyVideos', JSON.stringify(historyVideos))
-    localStorage.setItem('downloadedVideos', JSON.stringify(downloadedVideos))
+  componentDidMount() {
+    this.getHistoryVideos()
   }
 
-  clearHistoryVideos = () => {
+  componentDidUpdate(prevProps, prevState) {
+    const {savedVideos, likedVideos, dislikedVideos} = this.state
+
+    if (prevState.savedVideos !== savedVideos) {
+      localStorage.setItem('savedVideos', JSON.stringify(savedVideos))
+    }
+
+    if (prevState.likedVideos !== likedVideos) {
+      localStorage.setItem('likedVideos', JSON.stringify(likedVideos))
+    }
+
+    if (prevState.dislikedVideos !== dislikedVideos) {
+      localStorage.setItem('dislikedVideos', JSON.stringify(dislikedVideos))
+    }
+  }
+
+  getHistoryVideos = async () => {
+    const data = await apiRequest({
+      endpoint: '/history',
+      method: 'GET',
+    })
+
+    if (data.success === false) {
+      return
+    }
+
+    this.setState({
+      historyVideos: data.historyVideos || [],
+    })
+  }
+
+  clearHistoryVideos = async () => {
+    const data = await apiRequest({
+      endpoint: '/history',
+      method: 'DELETE',
+    })
+
+    if (data.success === false) {
+      return
+    }
+
     this.setState({historyVideos: []})
   }
 
@@ -111,30 +137,26 @@ class App extends Component {
     }))
   }
 
-  addToHistory = video => {
-    const today = new Date().toDateString()
+  addToHistory = async video => {
+    const data = await apiRequest({
+      endpoint: '/history',
+      method: 'POST',
+      body: video,
+    })
+
+    if (data.success === false) {
+      return
+    }
+
+    const newHistoryItem = data.historyVideo
 
     this.setState(prevState => {
-      const updatedHistory = prevState.historyVideos.filter(
-        each => each.video.id !== video.id,
+      const filteredHistory = prevState.historyVideos.filter(
+        each => each.videoId !== newHistoryItem.videoId,
       )
 
       return {
-        historyVideos: [{date: today, video}, ...updatedHistory],
-      }
-    })
-  }
-
-  addToDownloads = video => {
-    this.setState(prevState => {
-      const exists = prevState.downloadedVideos.find(each => each.id === video.id)
-
-      if (exists) {
-        return null
-      }
-
-      return {
-        downloadedVideos: [video, ...prevState.downloadedVideos],
+        historyVideos: [newHistoryItem, ...filteredHistory],
       }
     })
   }
@@ -145,18 +167,19 @@ class App extends Component {
     }))
   }
 
-  removeDownloadedVideo = id => {
-    this.setState(prevState => ({
-      downloadedVideos: prevState.downloadedVideos.filter(
-        each => each.id !== id,
-      ),
-    }))
-  }
+  removeHistoryVideo = async videoId => {
+    const data = await apiRequest({
+      endpoint: `/history/${videoId}`,
+      method: 'DELETE',
+    })
 
-  removeHistoryVideo = id => {
+    if (data.success === false) {
+      return
+    }
+
     this.setState(prevState => ({
       historyVideos: prevState.historyVideos.filter(
-        each => each.video.id !== id,
+        each => each.videoId !== videoId,
       ),
     }))
   }
@@ -178,12 +201,11 @@ class App extends Component {
           dislikeVideo: this.dislikeVideo,
           removeLike: this.removeLike,
           addToHistory: this.addToHistory,
-          addToDownloads: this.addToDownloads,
           clearHistoryVideos: this.clearHistoryVideos,
           removeSavedVideo: this.removeSavedVideo,
-          removeDownloadedVideo: this.removeDownloadedVideo,
           removeHistoryVideo: this.removeHistoryVideo,
           removeLikedVideo: this.removeLikedVideo,
+          getHistoryVideos: this.getHistoryVideos,
         }}
       >
         <Switch>
@@ -195,7 +217,6 @@ class App extends Component {
           <ProtectedRoute path="/saved-videos" component={SavingVideos} />
           <ProtectedRoute path="/liked-videos" component={LikedVideos} />
           <ProtectedRoute path="/history" component={History} />
-          <ProtectedRoute path="/downloads" component={Downloads} />
           <Route component={NotFound} />
         </Switch>
       </BackgroundContext.Provider>
