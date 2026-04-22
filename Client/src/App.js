@@ -55,8 +55,23 @@ class App extends Component {
       return;
     }
 
+    const formattedHistory = (data.historyVideos || []).map((item) => ({
+      ...item,
+      video: {
+        ...item.video,
+        thumbnailUrl: item.video.thumbnail_url,
+        viewCount: item.video.view_count,
+        publishedAt: item.video.published_at,
+        videoUrl: item.video.video_url,
+        channel: {
+          ...item.video.channel,
+          profileImageUrl: item.video.channel?.profile_image_url,
+        },
+      },
+    }));
+
     this.setState({
-      historyVideos: data.historyVideos || [],
+      historyVideos: formattedHistory,
     });
   };
 
@@ -148,20 +163,35 @@ class App extends Component {
       body: video,
     });
 
-    if (!data.historyVideo) {
-      console.error("Failed to add to history:", data);
+    if (data.success === false || !data.historyVideo) {
+      console.error("Failed to add history:", data);
       return;
     }
 
-    const newHistoryItem = data.historyVideo;
+    const item = data.historyVideo;
+
+    const formattedHistoryItem = {
+      ...item,
+      video: {
+        ...item.video,
+        thumbnailUrl: item.video.thumbnail_url,
+        viewCount: item.video.view_count,
+        publishedAt: item.video.published_at,
+        videoUrl: item.video.video_url,
+        channel: {
+          ...item.video.channel,
+          profileImageUrl: item.video.channel?.profile_image_url,
+        },
+      },
+    };
 
     this.setState((prevState) => {
       const filteredHistory = prevState.historyVideos.filter(
-        (each) => each.videoId !== newHistoryItem.videoId,
+        (each) => each.videoId !== formattedHistoryItem.videoId,
       );
 
       return {
-        historyVideos: [newHistoryItem, ...filteredHistory],
+        historyVideos: [formattedHistoryItem, ...filteredHistory],
       };
     });
   };
