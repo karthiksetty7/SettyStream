@@ -8,7 +8,7 @@ import './index.css'
 
 const CommonVideosList = props => {
   const {
-    eachVideo,
+    eachVideo = {},
     onDeleteVideo,
     showSaveOption = true,
     showShareOption = true,
@@ -18,11 +18,27 @@ const CommonVideosList = props => {
     showChannelInfo = true,
   } = props
 
-  const {id, title, thumbnailUrl, viewCount, publishedAt, channel = {}} = eachVideo
+  const {
+    id = '',
+    videoId = '',
+    title = 'Untitled Video',
+    thumbnailUrl = '',
+    thumbnail_url = '',
+    viewCount = '0',
+    view_count = '0',
+    publishedAt = '',
+    published_at = '',
+    channel = {},
+  } = eachVideo
+
+  const safeThumbnailUrl = thumbnailUrl || thumbnail_url || ''
+  const safeViewCount = viewCount || view_count || '0'
+  const safePublishedAt = publishedAt || published_at || ''
 
   const name = channel?.name || 'Unknown Channel'
   const profileImageUrl =
     channel?.profileImageUrl ||
+    channel?.profile_image_url ||
     'https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png'
 
   const [isOpen, setIsOpen] = useState(false)
@@ -46,27 +62,34 @@ const CommonVideosList = props => {
   }, [])
 
   const baseUrl = process.env.REACT_APP_SITE_URL || window.location.origin
-  const videoUrl = `${baseUrl}/videos/${id}`
+  const actualVideoId = id || videoId
+  const videoUrl = `${baseUrl}/videos/${actualVideoId}`
 
-  const parsedDate = publishedAt ? new Date(publishedAt) : null
-  const isPublishedDateValid = parsedDate && isValid(parsedDate)
+  const parsedDate = safePublishedAt ? new Date(safePublishedAt) : null
+  const isPublishedDateValid = parsedDate instanceof Date && isValid(parsedDate)
 
   const publishedText =
     showPublishedAt && isPublishedDateValid
       ? formatDistanceToNow(parsedDate, {addSuffix: true})
       : ''
 
-  const isSaved = savedVideos?.some(each => each.id === id)
+  const isSaved = savedVideos?.some(each => each.id === actualVideoId)
 
-  const onClickSave = () => {
+  const onClickSave = event => {
+    event.preventDefault()
+    event.stopPropagation()
     toggleSaveVideo(eachVideo)
     setIsOpen(false)
   }
 
-  const onClickDelete = () => {
-    if (onDeleteVideo) {
-      onDeleteVideo(id)
+  const onClickDelete = async event => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (onDeleteVideo && videoId) {
+      await onDeleteVideo(videoId)
     }
+
     setIsOpen(false)
   }
 
@@ -77,7 +100,10 @@ const CommonVideosList = props => {
     }, 1500)
   }
 
-  const onClickShare = async () => {
+  const onClickShare = async event => {
+    event.preventDefault()
+    event.stopPropagation()
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -95,7 +121,14 @@ const CommonVideosList = props => {
         showCopiedMessage()
       }
     }
+
     setIsOpen(false)
+  }
+
+  const onToggleMenu = event => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsOpen(prev => !prev)
   }
 
   const hasMenuOptions =
@@ -104,9 +137,9 @@ const CommonVideosList = props => {
   return (
     <div className="video-card">
       <div className="video-card__top-row">
-        <Link to={`/videos/${id}`} className="video-card__link">
+        <Link to={`/videos/${actualVideoId}`} className="video-card__link">
           <img
-            src={thumbnailUrl}
+            src={safeThumbnailUrl}
             alt="video thumbnail"
             className="video-card__thumbnail"
           />
@@ -132,7 +165,7 @@ const CommonVideosList = props => {
               )}
 
               <p className="video-card__meta">
-                {viewCount} views
+                {safeViewCount} views
                 {publishedText ? ` • ${publishedText}` : ''}
               </p>
             </div>
@@ -144,7 +177,7 @@ const CommonVideosList = props => {
             <button
               type="button"
               className="video-card__menu-btn"
-              onClick={() => setIsOpen(prev => !prev)}
+              onClick={onToggleMenu}
               aria-label="Video options"
             >
               <HiDotsVertical className="video-card__menu-icon" size={18} />
@@ -176,7 +209,7 @@ const CommonVideosList = props => {
                   </button>
                 )}
 
-                {showDeleteOption && onDeleteVideo && (
+                {showDeleteOption && onDeleteVideo && videoId && (
                   <button
                     type="button"
                     className="video-card__dropdown-item video-card__dropdown-item--danger"
