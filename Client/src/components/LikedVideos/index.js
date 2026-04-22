@@ -1,4 +1,4 @@
-import {useContext} from 'react'
+import {useContext, useEffect} from 'react'
 import {AiFillLike} from 'react-icons/ai'
 
 import BackgroundContext from '../../BackgroundContext'
@@ -9,8 +9,12 @@ import CommonVideosList from '../CommonVideosList'
 import '../../CommonVideosPage.css'
 
 const LikedVideos = () => {
-  const {likedVideos, isDarkMode, removeLikedVideo} =
+  const {likedVideos, isDarkMode, removeLikedVideo, getLikedVideos} =
     useContext(BackgroundContext)
+
+  useEffect(() => {
+    getLikedVideos()
+  }, [getLikedVideos])
 
   const pageClassName = `common-page ${isDarkMode ? 'common-page--dark' : ''}`
   const hasLikedVideos = likedVideos.length > 0
