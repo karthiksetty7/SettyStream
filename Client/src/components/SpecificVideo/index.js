@@ -1,155 +1,158 @@
-import {Component} from 'react'
-import Loader from 'react-loader-spinner'
-import ReactPlayer from 'react-player'
-import {BiLike, BiDislike, BiListPlus} from 'react-icons/bi'
+import { Component } from "react";
+import Loader from "react-loader-spinner";
+import ReactPlayer from "react-player";
+import { BiLike, BiDislike, BiListPlus } from "react-icons/bi";
 
-import Header from '../Header'
-import LeftNavBar from '../LeftNavBar'
-import BackgroundContext from '../../BackgroundContext'
-import {apiRequest} from '../../utils/api'
+import Header from "../Header";
+import LeftNavBar from "../LeftNavBar";
+import BackgroundContext from "../../BackgroundContext";
+import { apiRequest } from "../../utils/api";
 
-import './index.css'
+import "./index.css";
 
 const apiStatusConstants = {
-  INITIAL: 'INITIAL',
-  LOADING: 'LOADING',
-  SUCCESS: 'SUCCESS',
-  FAILURE: 'FAILURE',
-}
+  INITIAL: "INITIAL",
+  LOADING: "LOADING",
+  SUCCESS: "SUCCESS",
+  FAILURE: "FAILURE",
+};
 
 class SpecificVideo extends Component {
-  static contextType = BackgroundContext
+  static contextType = BackgroundContext;
 
   state = {
     videoDetails: null,
     apiStatus: apiStatusConstants.INITIAL,
-  }
+  };
 
   componentDidMount() {
-    this.getVideoDetails()
+    this.getVideoDetails();
   }
 
-  getFormattedVideoDetails = data => ({
-    id: data.id,
-    title: data.title,
-    videoUrl: data.video_url || '',
-    thumbnailUrl: data.thumbnail_url || '',
-    viewCount: data.view_count || '',
-    description: data.description || '',
-    publishedAt: data.published_at || '',
+  componentDidUpdate(prevProps) {
+    const prevId = prevProps.match.params.id;
+    const currentId = this.props.match.params.id;
+
+    if (prevId !== currentId) {
+      this.getVideoDetails();
+    }
+  }
+
+  getFormattedVideoDetails = (data) => ({
+    id: data?.id || "",
+    title: data?.title || "Untitled Video",
+    videoUrl: data?.videoUrl || data?.video_url || "",
+    thumbnailUrl: data?.thumbnailUrl || data?.thumbnail_url || "",
+    viewCount: data?.viewCount || data?.view_count || "0",
+    description: data?.description || "No description available",
+    publishedAt: data?.publishedAt || data?.published_at || "",
+    category: data?.category || "general",
     channel: {
-      name: data.channel?.name || 'Unknown Channel',
+      name: data?.channel?.name || "Unknown Channel",
       profileImageUrl:
-        data.channel?.profile_image_url ||
-        'https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png',
-      subscriberCount: data.channel?.subscriber_count || '',
+        data?.channel?.profileImageUrl ||
+        data?.channel?.profile_image_url ||
+        "https://assets.ccbp.in/frontend/react-js/nxt-watch-profile-img.png",
+      subscriberCount:
+        data?.channel?.subscriberCount ||
+        data?.channel?.subscriber_count ||
+        "0",
     },
-  })
-
-getHistoryPayload = data => ({
-  id: data.id,
-  title: data.title,
-  thumbnailurl: data.thumbnailUrl || data.thumbnail_url || '',  
-  viewcount: data.viewCount || data.view_count || '',          
-  publishedat: data.publishedAt || data.published_at || '',   
-  videourl: data.videoUrl || data.video_url || '',             
-  description: data.description || '',
-  category: data.category || '',
-  channel: {
-    name: data.channel?.name || 'Unknown Channel',
-    profileimageurl: data.channel?.profileImageUrl || data.channel?.profile_image_url || '',
-    subscribercount: data.channel?.subscriberCount || data.channel?.subscriber_count || '',
-  },
-})
-
+  });
 
   getVideoDetails = async () => {
-    this.setState({apiStatus: apiStatusConstants.LOADING})
+    this.setState({ apiStatus: apiStatusConstants.LOADING });
 
-    const {match} = this.props
-    const {id} = match.params
+    const { match } = this.props;
+    const { id } = match.params;
 
     try {
       const response = await apiRequest({
         endpoint: `/videos/${id}`,
-        method: 'GET',
+        method: "GET",
         isPublic: true,
-      })
+      });
 
-      if (response && response.success) {
-        const updatedData = this.getFormattedVideoDetails(response.video)
-        const historyPayload = this.getHistoryPayload(response.video)
+      if (response && response.success && response.video) {
+        const updatedData = this.getFormattedVideoDetails(response.video);
 
         this.setState({
           videoDetails: updatedData,
           apiStatus: apiStatusConstants.SUCCESS,
-        })
+        });
 
-        await this.context.addToHistory(historyPayload)
+        // Add to history only if not already there (optional)
+        await this.context.addToHistory(updatedData);
       } else {
-        this.setState({apiStatus: apiStatusConstants.FAILURE})
+        this.setState({ apiStatus: apiStatusConstants.FAILURE });
       }
-    } catch {
-      this.setState({apiStatus: apiStatusConstants.FAILURE})
+    } catch (error) {
+      console.error("Failed to fetch video details", error);
+      this.setState({ apiStatus: apiStatusConstants.FAILURE });
     }
-  }
+  };
 
-  onClickLike = async videoDetails => {
-    const {likedVideos, likeVideo, removeLike} = this.context
-    const isLiked = likedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+  onClickLike = async (videoDetails) => {
+    const { likedVideos, likeVideo, removeLike } = this.context;
+
+    const isLiked = likedVideos.find(
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
 
     if (isLiked) {
-      await removeLike(videoDetails)
+      await removeLike(videoDetails);
     } else {
-      await likeVideo(videoDetails)
+      await likeVideo(videoDetails);
     }
-  }
+  };
 
-  onClickDislike = async videoDetails => {
+  onClickDislike = async (videoDetails) => {
     const {
       likedVideos,
       dislikedVideos,
       dislikeVideo,
       removeDislikedVideo,
       removeLike,
-    } = this.context
+    } = this.context;
 
     const isDisliked = dislikedVideos.find(
-      eachVideo => eachVideo.id === videoDetails.id,
-    )
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
 
     if (isDisliked) {
-      await removeDislikedVideo(videoDetails.id)
-      return
+      await removeDislikedVideo(videoDetails.id);
+      return;
     }
 
-    const isLiked = likedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+    const isLiked = likedVideos.find(
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
 
     if (isLiked) {
-      await removeLike(videoDetails)
+      await removeLike(videoDetails);
     }
 
-    await dislikeVideo(videoDetails)
-  }
+    await dislikeVideo(videoDetails);
+  };
 
-  onClickSave = async videoDetails => {
-    await this.context.toggleSaveVideo(videoDetails)
-  }
+  onClickSave = async (videoDetails) => {
+    await this.context.toggleSaveVideo(videoDetails);
+  };
 
-  renderLoader = isDarkMode => (
+  renderLoader = (isDarkMode) => (
     <div className="loader-container" data-testid="loader">
       <Loader
         type="ThreeDots"
-        color={isDarkMode ? '#ffffff' : '#4f46e5'}
+        color={isDarkMode ? "#ffffff" : "#4f46e5"}
         height={50}
         width={50}
       />
     </div>
-  )
+  );
 
-  renderFailureView = isDarkMode => (
+  renderFailureView = (isDarkMode) => (
     <div
-      className={`video-page-error ${isDarkMode ? 'video-page-error--dark' : ''}`}
+      className={`video-page-error ${isDarkMode ? "video-page-error--dark" : ""}`}
     >
       <img
         src="https://assets.ccbp.in/frontend/react-js/nxt-watch-failure-view.png"
@@ -164,24 +167,24 @@ getHistoryPayload = data => ({
         Retry
       </button>
     </div>
-  )
+  );
 
   renderVideoContent = () => {
-    const {videoDetails} = this.state
-    const {
-      isDarkMode,
-      savedVideos,
-      likedVideos,
-      dislikedVideos,
-    } = this.context
+    const { videoDetails } = this.state;
+    const { isDarkMode, savedVideos, likedVideos, dislikedVideos } =
+      this.context;
 
-    const isSaved = savedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
-    const isLiked = likedVideos.find(eachVideo => eachVideo.id === videoDetails.id)
+    const isSaved = savedVideos.find(
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
+    const isLiked = likedVideos.find(
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
     const isDisliked = dislikedVideos.find(
-      eachVideo => eachVideo.id === videoDetails.id,
-    )
+      (eachVideo) => eachVideo.id === videoDetails.id,
+    );
 
-    const {title, videoUrl, viewCount, description, channel} = videoDetails
+    const { title, videoUrl, viewCount, description, channel } = videoDetails;
 
     return (
       <div className="video-page-container">
@@ -196,7 +199,7 @@ getHistoryPayload = data => ({
             <div className="video-page-buttons">
               <button
                 type="button"
-                className={`video-btn ${isLiked ? 'active-like' : ''}`}
+                className={`video-btn ${isLiked ? "active-like" : ""}`}
                 onClick={() => this.onClickLike(videoDetails)}
               >
                 <BiLike />
@@ -205,7 +208,7 @@ getHistoryPayload = data => ({
 
               <button
                 type="button"
-                className={`video-btn ${isDisliked ? 'active-dislike' : ''}`}
+                className={`video-btn ${isDisliked ? "active-dislike" : ""}`}
                 onClick={() => this.onClickDislike(videoDetails)}
               >
                 <BiDislike />
@@ -214,11 +217,11 @@ getHistoryPayload = data => ({
 
               <button
                 type="button"
-                className={`video-btn ${isSaved ? 'active-save' : ''}`}
+                className={`video-btn ${isSaved ? "active-save" : ""}`}
                 onClick={() => this.onClickSave(videoDetails)}
               >
                 <BiListPlus />
-                {isSaved ? 'Saved' : 'Save'}
+                {isSaved ? "Saved" : "Save"}
               </button>
             </div>
           </div>
@@ -234,7 +237,7 @@ getHistoryPayload = data => ({
             <div className="video-page-channel-info">
               <p
                 className={`video-page-channel-name ${
-                  isDarkMode ? 'video-page-channel-name--dark' : ''
+                  isDarkMode ? "video-page-channel-name--dark" : ""
                 }`}
               >
                 {channel.name}
@@ -244,7 +247,7 @@ getHistoryPayload = data => ({
               </p>
               <p
                 className={`video-page-description ${
-                  isDarkMode ? 'video-page-description--dark' : ''
+                  isDarkMode ? "video-page-description--dark" : ""
                 }`}
               >
                 {description}
@@ -253,40 +256,42 @@ getHistoryPayload = data => ({
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   renderVideoDetails = () => {
-    const {apiStatus} = this.state
-    const {isDarkMode} = this.context
+    const { apiStatus } = this.state;
+    const { isDarkMode } = this.context;
 
     switch (apiStatus) {
       case apiStatusConstants.LOADING:
-        return this.renderLoader(isDarkMode)
+        return this.renderLoader(isDarkMode);
       case apiStatusConstants.SUCCESS:
-        return this.renderVideoContent()
+        return this.renderVideoContent();
       case apiStatusConstants.FAILURE:
-        return this.renderFailureView(isDarkMode)
+        return this.renderFailureView(isDarkMode);
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   render() {
-    const {isDarkMode} = this.context
+    const { isDarkMode } = this.context;
 
     return (
       <>
         <Header />
         <div className="nav-sections-container">
           <LeftNavBar />
-          <main className={`video-page ${isDarkMode ? 'video-page--dark' : ''}`}>
+          <main
+            className={`video-page ${isDarkMode ? "video-page--dark" : ""}`}
+          >
             {this.renderVideoDetails()}
           </main>
         </div>
       </>
-    )
+    );
   }
 }
 
-export default SpecificVideo
+export default SpecificVideo;
