@@ -8,6 +8,8 @@ import logo from '../../SettyStream.png'
 import './index.css'
 
 class Login extends Component {
+  isMountedFlag = false
+
   state = {
     loginId: '',
     password: '',
@@ -16,57 +18,132 @@ class Login extends Component {
     isLoading: false,
   }
 
+  componentDidMount() {
+    this.isMountedFlag = true
+  }
+
+  componentWillUnmount() {
+    this.isMountedFlag = false
+  }
+
+  setSafeState = updates => {
+    if (this.isMountedFlag) {
+      this.setState(updates)
+    }
+  }
+
   verifyUserCredientials = async event => {
     event.preventDefault()
 
     const {loginId, password} = this.state
     const {history} = this.props
 
-    this.setState({
+    this.setSafeState({
       errMsg: '',
       isLoading: true,
     })
 
-    const data = await apiRequest({
-      endpoint: '/auth/login',
-      method: 'POST',
-      body: {
-        loginId,
-        password,
-      },
-      history,
-      isPublic: true,
-    })
+    try {
+      const data = await apiRequest({
+        endpoint: '/auth/login',
+        method: 'POST',
+        body: {
+          loginId,
+          password,
+        },
+        history,
+        isPublic: true,
+      })
 
-    if (data && data.success) {
-      Cookies.set('token', data.token, {expires: 30})
-      localStorage.setItem('token', data.token)
+      console.log('LOGIN RESPONSE:', data)
 
-      if (data.user_id) {
-        localStorage.setItem('user_id', data.user_id)
-      } else if (data.id) {
-        localStorage.setItem('user_id', data.id)
+      if (data && data.success) {
+        const token =
+          data.token ||
+          data.jwt_token ||
+          data.jwtToken ||
+          data.accessToken ||
+          ''
+
+        if (!token) {
+          this.setSafeState({
+            errMsg: 'Login succeeded but token was not returned properly.',
+            isLoading: false,
+          })
+          return
+        }
+
+        Cookies.set('jwt_token', token, {expires: 30})
+        localStorage.setItem('jwt_token', token)
+
+        const userId =
+          data.user_id ||
+          data.userId ||
+          data.id ||
+          data.user?.id ||
+          ''
+
+        const username =
+          data.username ||
+          data.user?.username ||
+          data.loginId ||
+          ''
+
+        const userName =
+          data.name ||
+          data.user_name ||
+          data.userName ||
+          data.user?.name ||
+          ''
+
+        if (userId) {
+          localStorage.setItem('user_id', userId)
+        }
+
+        if (username) {
+          localStorage.setItem('username', username)
+        }
+
+        if (userName) {
+          localStorage.setItem('user_name', userName)
+        }
+
+        window.dispatchEvent(new Event('auth-change'))
+
+        if (this.isMountedFlag) {
+          history.replace('/')
+        }
+
+        return
       }
 
-      if (data.username) {
-        localStorage.setItem('username', data.username)
-      }
-
-      if (data.name) {
-        localStorage.setItem('user_name', data.name)
-      }
-
-      window.dispatchEvent(new Event('auth-change'))
-      history.replace('/')
-    } else {
-      this.setState({errMsg: data?.message || 'Login failed'})
+      this.setSafeState({
+        errMsg: data?.message || 'Login failed',
+        isLoading: false,
+      })
+    } catch (error) {
+      console.error('LOGIN ERROR:', error)
+      this.setSafeState({
+        errMsg: 'Something went wrong. Please try again.',
+        isLoading: false,
+      })
     }
+  }
 
-    this.setState({isLoading: false})
+  onChangeLoginId = event => {
+    this.setState({loginId: event.target.value})
+  }
+
+  onChangePassword = event => {
+    this.setState({password: event.target.value})
+  }
+
+  onToggleShowPassword = event => {
+    this.setState({showPasswd: event.target.checked})
   }
 
   render() {
-    const token = Cookies.get('token') || localStorage.getItem('token')
+    const token = Cookies.get('jwt_token') || localStorage.getItem('jwt_token')
 
     if (token) {
       return <Redirect to="/" />
@@ -88,7 +165,7 @@ class Login extends Component {
               type="text"
               placeholder="Enter Username or Email"
               value={loginId}
-              onChange={e => this.setState({loginId: e.target.value})}
+              onChange={this.onChangeLoginId}
               className="login__input"
             />
 
@@ -100,7 +177,7 @@ class Login extends Component {
               type={showPasswd ? 'text' : 'password'}
               placeholder="Enter Password"
               value={password}
-              onChange={e => this.setState({password: e.target.value})}
+              onChange={this.onChangePassword}
               className="login__input"
             />
 
@@ -109,7 +186,7 @@ class Login extends Component {
                 id="showPassword"
                 type="checkbox"
                 checked={showPasswd}
-                onChange={e => this.setState({showPasswd: e.target.checked})}
+                onChange={this.onToggleShowPassword}
               />
               <label htmlFor="showPassword">Show Password</label>
             </div>
