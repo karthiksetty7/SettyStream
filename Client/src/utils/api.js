@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie'
 import {handleAuthError} from './auth'
 
-const BASE_URL = 'https://settystream-production.up.railway.app/api'
+const BASE_URL = 'https://settystream.onrender.com/api'
 const TOKEN_KEY = 'jwt_token'
 const USER_ID_KEY = 'user_id'
 const USERNAME_KEY = 'username'
