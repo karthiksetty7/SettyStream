@@ -6,6 +6,7 @@ dotenv.config()
 
 const PORT = process.env.PORT || 5000
 
+// connect database FIRST
 connectDB()
 
 app.listen(PORT, () => {
