@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+
 import videoRoutes from './routes/videoRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 import historyRoutes from './routes/historyRoutes.js'
@@ -12,9 +13,45 @@ dotenv.config()
 
 const app = express()
 
-app.use(cors())
+// =========================
+// ✅ CORS CONFIG (PRODUCTION SAFE)
+// =========================
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "https://settystream.onrender.com"
+]
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow Postman / server requests (no origin)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      console.error("❌ CORS blocked:", origin)
+      callback(null, false)
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}
+
+// MUST be first
+app.use(cors(corsOptions))
+
+// IMPORTANT: DO NOT use "*", use regex instead
+app.options(/.*/, cors(corsOptions))
+
+// =========================
+// MIDDLEWARE
+// =========================
 app.use(express.json())
 
+// =========================
+// HEALTH ROUTES
+// =========================
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -29,6 +66,9 @@ app.get('/health', (req, res) => {
   })
 })
 
+// =========================
+// API ROUTES
+// =========================
 app.use('/api/auth', authRoutes)
 app.use('/api/videos', videoRoutes)
 app.use('/api/history', historyRoutes)
@@ -36,6 +76,9 @@ app.use('/api/saved-videos', savedVideoRoutes)
 app.use('/api/liked-videos', likedVideoRoutes)
 app.use('/api/disliked-videos', dislikedVideoRoutes)
 
+// =========================
+// 404 HANDLER
+// =========================
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -43,8 +86,11 @@ app.use((req, res) => {
   })
 })
 
+// =========================
+// GLOBAL ERROR HANDLER
+// =========================
 app.use((err, req, res, next) => {
-  console.error('App error:', err)
+  console.error('❌ App error:', err)
 
   res.status(err.status || 500).json({
     success: false,
