@@ -25,11 +25,13 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow Postman / server requests (no origin)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // allow Postman / server / mobile apps
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
-      console.error("❌ CORS blocked:", origin)
+      console.log("❌ CORS blocked:", origin)
       callback(null, false)
     }
   },
@@ -38,11 +40,14 @@ const corsOptions = {
   credentials: true,
 }
 
-// MUST be first
+// Apply CORS
 app.use(cors(corsOptions))
 
-// IMPORTANT: DO NOT use "*", use regex instead
-app.options(/.*/, cors(corsOptions))
+// =========================
+// IMPORTANT: DO NOT USE "*"
+// =========================
+// Express v5 breaks with "*", so we REMOVE it completely
+// app.options("*", cors(corsOptions)) ❌ DO NOT USE
 
 // =========================
 // MIDDLEWARE
@@ -50,7 +55,7 @@ app.options(/.*/, cors(corsOptions))
 app.use(express.json())
 
 // =========================
-// HEALTH ROUTES
+// HEALTH CHECK ROUTES
 // =========================
 app.get('/', (req, res) => {
   res.status(200).json({
