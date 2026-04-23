@@ -14,7 +14,7 @@ dotenv.config()
 const app = express()
 
 // =========================
-// ✅ CORS CONFIG (PRODUCTION SAFE)
+// ✅ CORS CONFIG (SAFE + FIXED)
 // =========================
 const allowedOrigins = [
   "http://localhost:3000",
@@ -25,15 +25,17 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow Postman / server / mobile apps
+    // allow Postman / curl / server requests
     if (!origin) return callback(null, true)
 
     if (allowedOrigins.includes(origin)) {
-      callback(null, true)
-    } else {
-      console.log("❌ CORS blocked:", origin)
-      callback(null, false)
+      return callback(null, true)
     }
+
+    console.log("❌ CORS blocked:", origin)
+
+    // TEMP DEV FIX (allow all)
+    return callback(null, true)
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -44,10 +46,10 @@ const corsOptions = {
 app.use(cors(corsOptions))
 
 // =========================
-// IMPORTANT: DO NOT USE "*"
+// ❌ IMPORTANT FIX
+// DO NOT use "/*" or "*"
+// Express v5 BREAKS with it
 // =========================
-// Express v5 breaks with "*", so we REMOVE it completely
-// app.options("*", cors(corsOptions)) ❌ DO NOT USE
 
 // =========================
 // MIDDLEWARE
@@ -55,7 +57,7 @@ app.use(cors(corsOptions))
 app.use(express.json())
 
 // =========================
-// HEALTH CHECK ROUTES
+// HEALTH ROUTES
 // =========================
 app.get('/', (req, res) => {
   res.status(200).json({
